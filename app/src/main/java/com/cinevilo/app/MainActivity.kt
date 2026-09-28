@@ -1,0 +1,1282 @@
+package com.cinevilo.app
+
+import android.graphics.BitmapFactory
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.cinevilo.app.data.Contenido
+import com.cinevilo.app.player.CineviloPlayer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import java.net.HttpURLConnection
+import java.net.URL
+
+private val CineviloBlack = Color(0xFF08090D)
+private val CineviloDark = Color(0xFF101218)
+private val CineviloBlue = Color(0xFF2563FF)
+private val CineviloGray = Color(0xFF9CA3AF)
+
+private const val API_URL =
+    "https://cinevilo-api.soccerenvivo0.workers.dev/api/contenido"
+
+private const val ENVIVO_API_URL =
+    "https://cinevilo-api.soccerenvivo0.workers.dev/api/en-vivo"
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            CineviloApp()
+        }
+    }
+}
+
+suspend fun cargarContenidoDesdeApi(): List<Contenido> =
+    withContext(Dispatchers.IO) {
+
+        val url = URL(API_URL)
+        val conexion = url.openConnection() as HttpURLConnection
+
+        try {
+            conexion.requestMethod = "GET"
+            conexion.connectTimeout = 10000
+            conexion.readTimeout = 10000
+
+            val respuesta =
+                conexion.inputStream.bufferedReader().use { it.readText() }
+
+            val json = JSONArray(respuesta)
+
+            List(json.length()) { i ->
+
+                val item = json.getJSONObject(i)
+
+                Contenido(
+                    id = item.getString("id"),
+                    titulo = item.optString("titulo"),
+                    tipo = item.optString("tipo"),
+                    descripcion = item.optString("descripcion"),
+                    genero = item.optString("genero")
+                        .split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() },
+                    anio = if (
+                        item.has("anio") &&
+                        !item.isNull("anio")
+                    ) {
+                        item.getInt("anio")
+                    } else {
+                        null
+                    },
+                    portadaUrl = item.optString("portadaUrl"),
+                    bannerUrl = item.optString("bannerUrl"),
+                    videoUrl = item.optString("videoUrl"),
+                    esOriginal = item.optInt("esOriginal") == 1,
+                    destacado = item.optInt("destacado") == 1,
+                    estreno = item.optInt("estreno") == 1
+                )
+            }
+
+        } finally {
+            conexion.disconnect()
+        }
+    }
+
+suspend fun cargarEnVivoDesdeApi(): String? =
+    withContext(Dispatchers.IO) {
+
+        val url = URL(ENVIVO_API_URL)
+        val conexion = url.openConnection() as HttpURLConnection
+
+        try {
+            conexion.requestMethod = "GET"
+            conexion.connectTimeout = 10000
+            conexion.readTimeout = 10000
+
+            val respuesta =
+                conexion.inputStream.bufferedReader().use { it.readText() }
+
+            val json = JSONArray(respuesta)
+
+            for (i in 0 until json.length()) {
+                val item = json.getJSONObject(i)
+
+                if (item.optInt("activo") == 1) {
+                    val videoUrl = item.optString("url")
+
+                    if (videoUrl.isNotBlank()) {
+                        return@withContext videoUrl
+                    }
+                }
+            }
+
+            null
+
+        } finally {
+            conexion.disconnect()
+        }
+    }
+
+@Composable
+fun CineviloApp() {
+
+    var contenidos by remember {
+        mutableStateOf<List<Contenido>>(emptyList())
+    }
+
+    var cargando by remember {
+        mutableStateOf(true)
+    }
+
+    var pantalla by remember {
+        mutableStateOf("inicio")
+    }
+
+    var seleccionado by remember {
+        mutableStateOf<Contenido?>(null)
+    }
+
+    var miLista by remember {
+        mutableStateOf<List<Contenido>>(emptyList())
+    }
+
+    var urlEnVivo by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var cargandoEnVivo by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(Unit) {
+
+        try {
+            contenidos = cargarContenidoDesdeApi()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        cargando = false
+    }
+
+    MaterialTheme {
+
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = CineviloBlack
+        ) {
+
+            when {
+
+                seleccionado != null -> {
+
+                    CineviloDetalle(
+                        contenido = seleccionado!!,
+                        enMiLista = miLista.any {
+                            it.id == seleccionado!!.id
+                        },
+                        onBack = {
+                            seleccionado = null
+                        },
+                        onMiLista = {
+
+                            val item = seleccionado!!
+
+                            miLista =
+                                if (miLista.any { it.id == item.id }) {
+                                    miLista.filter {
+                                        it.id != item.id
+                                    }
+                                } else {
+                                    miLista + item
+                                }
+                        }
+                    )
+                }
+
+                cargando -> {
+
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Text(
+                            text = "CINEVILO",
+                            color = Color.White,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                pantalla == "buscar" -> {
+
+                    CineviloBuscar(
+                        contenidos = contenidos,
+                        onSeleccionar = {
+                            seleccionado = it
+                        },
+                        onNavigate = {
+                            pantalla = it
+                        }
+                    )
+                }
+
+                pantalla == "envivo" -> {
+
+                    LaunchedEffect(Unit) {
+                        cargandoEnVivo = true
+                        try {
+                            urlEnVivo = cargarEnVivoDesdeApi()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            urlEnVivo = null
+                        }
+                        cargandoEnVivo = false
+                    }
+
+                    EnVivoScreen(
+                        videoUrl = urlEnVivo,
+                        cargando = cargandoEnVivo,
+                        onNavigate = {
+                            pantalla = it
+                        }
+                    )
+                }
+
+                pantalla == "lista" -> {
+
+                    CineviloMiLista(
+                        contenidos = miLista,
+                        onSeleccionar = {
+                            seleccionado = it
+                        },
+                        onNavigate = {
+                            pantalla = it
+                        }
+                    )
+                }
+
+                pantalla == "perfil" -> {
+
+                    CineviloPerfil(
+                        onNavigate = {
+                            pantalla = it
+                        }
+                    )
+                }
+
+                else -> {
+
+                    CineviloHome(
+                        contenidos = contenidos,
+                        onSeleccionar = {
+                            seleccionado = it
+                        },
+                        onNavigate = {
+                            pantalla = it
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EnVivoScreen(
+    videoUrl: String?,
+    cargando: Boolean,
+    onNavigate: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CineviloBlack)
+    ) {
+
+        Text(
+            text = "CINEVILO EN VIVO",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(
+                start = 20.dp,
+                top = 24.dp,
+                end = 20.dp,
+                bottom = 16.dp
+            )
+        )
+
+        when {
+            cargando -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Conectando con CINEVILO EN VIVO...",
+                        color = CineviloGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            !videoUrl.isNullOrBlank() -> {
+                CineviloPlayer(
+                    videoUrl = videoUrl
+                )
+            }
+
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No hay una transmisión activa.",
+                        color = CineviloGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CineviloHome(
+    contenidos: List<Contenido>,
+    onSeleccionar: (Contenido) -> Unit,
+    onNavigate: (String) -> Unit
+) {
+
+    val destacados =
+        contenidos.filter { it.destacado }
+
+    val peliculas =
+        contenidos.filter {
+            it.tipo.equals("pelicula", true)
+        }
+
+    val series =
+        contenidos.filter {
+            it.tipo.equals("serie", true)
+        }
+
+    val principal =
+        destacados.firstOrNull()
+            ?: contenidos.firstOrNull()
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 20.dp,
+                        vertical = 18.dp
+                    ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text = "CINEVILO",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "C",
+                    color = CineviloBlue,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (principal != null) {
+
+                CineviloHero(
+                    contenido = principal,
+                    onClick = {
+                        onSeleccionar(principal)
+                    }
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
+
+            if (peliculas.isNotEmpty()) {
+
+                CineviloSection(
+                    titulo = "Películas",
+                    contenidos = peliculas,
+                    onSeleccionar = onSeleccionar
+                )
+            }
+
+            if (series.isNotEmpty()) {
+
+                CineviloSection(
+                    titulo = "Series",
+                    contenidos = series,
+                    onSeleccionar = onSeleccionar
+                )
+            }
+
+            if (contenidos.isEmpty()) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    Text(
+                        text = "No hay contenido disponible.",
+                        color = CineviloGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
+        }
+
+        CineviloBottomBar(
+            actual = "inicio",
+            onNavigate = onNavigate
+        )
+    }
+}
+
+@Composable
+fun CineviloHero(
+    contenido: Contenido,
+    onClick: () -> Unit
+) {
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { onClick() }
+    ) {
+
+        RemoteImage(
+            url = contenido.bannerUrl.ifBlank {
+                contenido.portadaUrl
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Color.Black.copy(alpha = 0.55f)
+                )
+                .padding(20.dp)
+                .align(Alignment.BottomStart)
+        ) {
+
+            if (contenido.esOriginal) {
+
+                Text(
+                    text = "CINEVILO ORIGINAL",
+                    color = CineviloBlue,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = contenido.titulo,
+                color = Color.White,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (contenido.descripcion.isNotBlank()) {
+
+                Spacer(
+                    modifier = Modifier.height(6.dp)
+                )
+
+                Text(
+                    text = contenido.descripcion,
+                    color = Color.LightGray,
+                    fontSize = 13.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CineviloSection(
+    titulo: String,
+    contenidos: List<Contenido>,
+    onSeleccionar: (Contenido) -> Unit
+) {
+
+    Column {
+
+        Text(
+            text = titulo,
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(
+                horizontal = 20.dp
+            )
+        )
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+
+            contenidos.forEach { item ->
+
+                CineviloCard(
+                    contenido = item,
+                    onClick = {
+                        onSeleccionar(item)
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.width(12.dp)
+                )
+            }
+        }
+
+        Spacer(
+            modifier = Modifier.height(24.dp)
+        )
+    }
+}
+
+@Composable
+fun CineviloCard(
+    contenido: Contenido,
+    onClick: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .width(145.dp)
+            .clickable { onClick() }
+    ) {
+
+        RemoteImage(
+            url = contenido.portadaUrl,
+            modifier = Modifier
+                .width(145.dp)
+                .height(205.dp)
+                .clip(RoundedCornerShape(10.dp))
+        )
+
+        Spacer(
+            modifier = Modifier.height(7.dp)
+        )
+
+        Text(
+            text = contenido.titulo,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun CineviloBuscar(
+    contenidos: List<Contenido>,
+    onSeleccionar: (Contenido) -> Unit,
+    onNavigate: (String) -> Unit
+) {
+
+    var texto by remember {
+        mutableStateOf("")
+    }
+
+    val resultados =
+        if (texto.isBlank()) {
+            contenidos
+        } else {
+            contenidos.filter {
+                it.titulo.contains(
+                    texto,
+                    ignoreCase = true
+                ) ||
+                it.descripcion.contains(
+                    texto,
+                    ignoreCase = true
+                ) ||
+                it.genero.any {
+                    genero ->
+                    genero.contains(
+                        texto,
+                        ignoreCase = true
+                    )
+                }
+            }
+        }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+
+            Text(
+                text = "Buscar",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
+
+            androidx.compose.material3.OutlinedTextField(
+                value = texto,
+                onValueChange = {
+                    texto = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text("Buscar películas o series")
+                },
+                singleLine = true
+            )
+
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
+
+            resultados.forEach { item ->
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onSeleccionar(item)
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    RemoteImage(
+                        url = item.portadaUrl,
+                        modifier = Modifier
+                            .size(75.dp, 105.dp)
+                            .clip(
+                                RoundedCornerShape(8.dp)
+                            )
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(14.dp)
+                    )
+
+                    Column {
+
+                        Text(
+                            text = item.titulo,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = if (
+                                item.tipo.equals(
+                                    "serie",
+                                    true
+                                )
+                            ) {
+                                "Serie"
+                            } else {
+                                "Película"
+                            },
+                            color = CineviloGray,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        CineviloBottomBar(
+            actual = "buscar",
+            onNavigate = onNavigate
+        )
+    }
+}
+
+@Composable
+fun CineviloMiLista(
+    contenidos: List<Contenido>,
+    onSeleccionar: (Contenido) -> Unit,
+    onNavigate: (String) -> Unit
+) {
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+
+            Text(
+                text = "Mi lista",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
+
+            if (contenidos.isEmpty()) {
+
+                Text(
+                    text = "Todavía no has agregado contenido a tu lista.",
+                    color = CineviloGray
+                )
+
+            } else {
+
+                contenidos.forEach { item ->
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSeleccionar(item)
+                            }
+                            .padding(vertical = 8.dp)
+                    ) {
+
+                        RemoteImage(
+                            url = item.portadaUrl,
+                            modifier = Modifier
+                                .size(90.dp, 125.dp)
+                                .clip(
+                                    RoundedCornerShape(8.dp)
+                                )
+                        )
+
+                        Spacer(
+                            modifier = Modifier.width(14.dp)
+                        )
+
+                        Column {
+
+                            Text(
+                                text = item.titulo,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                text = item.descripcion,
+                                color = CineviloGray,
+                                fontSize = 13.sp,
+                                maxLines = 4,
+                                overflow =
+                                    TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        CineviloBottomBar(
+            actual = "lista",
+            onNavigate = onNavigate
+        )
+    }
+}
+
+@Composable
+fun CineviloPerfil(
+    onNavigate: (String) -> Unit
+) {
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+
+            Text(
+                text = "Perfil",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(28.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(
+                        RoundedCornerShape(45.dp)
+                    )
+                    .background(CineviloBlue),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Text(
+                    text = "C",
+                    color = Color.White,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
+
+            Text(
+                text = "Usuario CINEVILO",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = "Tu perfil de CINEVILO",
+                color = CineviloGray
+            )
+        }
+
+        CineviloBottomBar(
+            actual = "perfil",
+            onNavigate = onNavigate
+        )
+    }
+}
+
+@Composable
+fun CineviloDetalle(
+    contenido: Contenido,
+    enMiLista: Boolean,
+    onBack: () -> Unit,
+    onMiLista: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(
+                rememberScrollState()
+            )
+    ) {
+
+        TextButton(
+            onClick = onBack,
+            modifier = Modifier.padding(
+                start = 8.dp,
+                top = 8.dp
+            )
+        ) {
+
+            Text(
+                text = "‹  Volver",
+                color = Color.White
+            )
+        }
+
+        if (contenido.videoUrl.isNotBlank()) {
+
+            CineviloPlayer(
+                videoUrl = contenido.videoUrl
+            )
+
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
+        } else {
+
+            RemoteImage(
+                url = contenido.bannerUrl.ifBlank {
+                    contenido.portadaUrl
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+            )
+        }
+
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+
+            if (contenido.esOriginal) {
+
+                Text(
+                    text = "CINEVILO ORIGINAL",
+                    color = CineviloBlue,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+
+                Spacer(
+                    modifier = Modifier.height(5.dp)
+                )
+            }
+
+            Text(
+                text = contenido.titulo,
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = buildString {
+
+                    append(
+                        if (
+                            contenido.tipo.equals(
+                                "serie",
+                                true
+                            )
+                        ) {
+                            "Serie"
+                        } else {
+                            "Película"
+                        }
+                    )
+
+                    contenido.anio?.let {
+                        append(" • $it")
+                    }
+                },
+                color = CineviloGray
+            )
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            if (contenido.genero.isNotEmpty()) {
+
+                Text(
+                    text = contenido.genero.joinToString(" • "),
+                    color = CineviloGray,
+                    fontSize = 13.sp
+                )
+
+                Spacer(
+                    modifier = Modifier.height(14.dp)
+                )
+            }
+
+            Text(
+                text = contenido.descripcion.ifBlank {
+                    "Sin descripción disponible."
+                },
+                color = Color.White,
+                fontSize = 15.sp,
+                lineHeight = 22.sp
+            )
+
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
+
+            Button(
+                onClick = onMiLista,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CineviloBlue
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                Text(
+                    text = if (enMiLista) {
+                        "✓ En mi lista"
+                    } else {
+                        "+ Mi lista"
+                    }
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(30.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun CineviloBottomBar(
+    actual: String,
+    onNavigate: (String) -> Unit
+) {
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CineviloDark)
+            .navigationBarsPadding()
+            .padding(
+                vertical = 10.dp,
+                horizontal = 8.dp
+            ),
+        horizontalArrangement =
+            Arrangement.SpaceEvenly
+    ) {
+
+        CineviloNavItem(
+            texto = "Inicio",
+            id = "inicio",
+            actual = actual,
+            onClick = onNavigate
+        )
+
+        CineviloNavItem(
+            texto = "Buscar",
+            id = "buscar",
+            actual = actual,
+            onClick = onNavigate
+        )
+
+        CineviloNavItem(
+            texto = "EN VIVO",
+            id = "envivo",
+            actual = actual,
+            onClick = onNavigate
+        )
+
+        CineviloNavItem(
+            texto = "Mi lista",
+            id = "lista",
+            actual = actual,
+            onClick = onNavigate
+        )
+
+        CineviloNavItem(
+            texto = "Perfil",
+            id = "perfil",
+            actual = actual,
+            onClick = onNavigate
+        )
+    }
+}
+
+@Composable
+fun CineviloNavItem(
+    texto: String,
+    id: String,
+    actual: String,
+    onClick: (String) -> Unit
+) {
+
+    Text(
+        text = texto,
+        color =
+            if (actual == id) {
+                CineviloBlue
+            } else {
+                CineviloGray
+            },
+        fontSize = 12.sp,
+        fontWeight =
+            if (actual == id) {
+                FontWeight.Bold
+            } else {
+                FontWeight.Normal
+            },
+        modifier = Modifier
+            .clickable {
+                onClick(id)
+            }
+            .padding(
+                horizontal = 10.dp,
+                vertical = 8.dp
+            )
+    )
+}
+
+@Composable
+fun RemoteImage(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+
+    var bitmap by remember(url) {
+        mutableStateOf<android.graphics.Bitmap?>(null)
+    }
+
+    LaunchedEffect(url) {
+
+        if (url.isBlank()) {
+            bitmap = null
+            return@LaunchedEffect
+        }
+
+        bitmap = withContext(Dispatchers.IO) {
+
+            try {
+
+                val connection =
+                    URL(url).openConnection()
+                        as HttpURLConnection
+
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+
+                connection.inputStream.use {
+                    BitmapFactory.decodeStream(it)
+                }
+
+            } catch (e: Exception) {
+
+                null
+            }
+        }
+    }
+
+    if (bitmap != null) {
+
+        Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+
+    } else {
+
+        Box(
+            modifier = modifier
+                .background(
+                    Color(0xFF171A22)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Text(
+                text = "SIN PORTADA",
+                color = Color(0xFF555B6B),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
