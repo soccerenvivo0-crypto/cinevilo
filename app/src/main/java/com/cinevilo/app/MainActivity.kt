@@ -128,7 +128,15 @@ suspend fun cargarContenidoDesdeApi(): List<Contenido> =
         }
     }
 
-suspend fun cargarEnVivoDesdeApi(): String? =
+data class EnVivoItem(
+    val id: Int,
+    val titulo: String,
+    val modo: String,
+    val url: String,
+    val activo: Boolean
+)
+
+suspend fun cargarEnVivoDesdeApi(): List<EnVivoItem> =
     withContext(Dispatchers.IO) {
 
         val url = URL(ENVIVO_API_URL)
@@ -143,20 +151,29 @@ suspend fun cargarEnVivoDesdeApi(): String? =
                 conexion.inputStream.bufferedReader().use { it.readText() }
 
             val json = JSONArray(respuesta)
+            val canales = mutableListOf<EnVivoItem>()
 
             for (i in 0 until json.length()) {
                 val item = json.getJSONObject(i)
+                val videoUrl = item.optString("url")
 
-                if (item.optInt("activo") == 1) {
-                    val videoUrl = item.optString("url")
-
-                    if (videoUrl.isNotBlank()) {
-                        return@withContext videoUrl
-                    }
+                if (
+                    item.optInt("activo") == 1 &&
+                    videoUrl.isNotBlank()
+                ) {
+                    canales.add(
+                        EnVivoItem(
+                            id = item.optInt("id"),
+                            titulo = item.optString("titulo", "Canal CINEVILO"),
+                            modo = item.optString("modo", "link"),
+                            url = videoUrl,
+                            activo = true
+                        )
+                    )
                 }
             }
 
-            null
+            canales
 
         } finally {
             conexion.disconnect()
@@ -186,8 +203,12 @@ fun CineviloApp() {
         mutableStateOf<List<Contenido>>(emptyList())
     }
 
-    var urlEnVivo by remember {
-        mutableStateOf<String?>(null)
+    var canalesEnVivo by remember {
+        mutableStateOf<List<EnVivoItem>>(emptyList())
+    }
+
+    var canalSeleccionado by remember {
+        mutableStateOf<EnVivoItem?>(null)
     }
 
     var cargandoEnVivo by remember {
@@ -273,18 +294,35 @@ fun CineviloApp() {
 
                     LaunchedEffect(Unit) {
                         cargandoEnVivo = true
+
                         try {
-                            urlEnVivo = cargarEnVivoDesdeApi()
+                            val canales = cargarEnVivoDesdeApi()
+                            canalesEnVivo = canales
+
+                            if (canalSeleccionado == null ||
+                                canales.none { it.id == canalSeleccionado?.id }
+                            ) {
+                                canalSeleccionado =
+                                    canales.firstOrNull { it.modo.equals("rtmp", true) }
+                                        ?: canales.firstOrNull()
+                            }
+
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            urlEnVivo = null
+                            canalesEnVivo = emptyList()
+                            canalSeleccionado = null
                         }
+
                         cargandoEnVivo = false
                     }
 
                     EnVivoScreen(
-                        videoUrl = urlEnVivo,
+                        canales = canalesEnVivo,
+                        canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
+                        onSeleccionarCanal = {
+                            canalSeleccionado = it
+                        },
                         onNavigate = {
                             pantalla = it
                         }
@@ -332,8 +370,10 @@ fun CineviloApp() {
 
 @Composable
 fun EnVivoScreen(
-    videoUrl: String?,
+    canales: List<EnVivoItem>,
+    canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
+    onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
     Column(
@@ -371,10 +411,83 @@ fun EnVivoScreen(
                 }
             }
 
-            !videoUrl.isNullOrBlank() -> {
+            canalSeleccionado != null -> {
                 CineviloPlayer(
-                    videoUrl = videoUrl
+                    videoUrl = canalSeleccionado.url
                 )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                ) {
+
+                    Text(
+                        text =
+                            if (canalSeleccionado.modo.equals("rtmp", true)) {
+                                "CINEVILO EN VIVO"
+                            } else {
+                                canalSeleccionado.titulo
+                            },
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
+
+                    Text(
+                        text = "CANALES",
+                        color = CineviloGray,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
+
+                    val canalesAdicionales =
+                        canales.filter {
+                            !it.modo.equals("rtmp", true)
+                        }
+
+                    canalesAdicionales.forEach { canal ->
+
+                        val seleccionado =
+                            canal.id == canalSeleccionado.id
+
+                        Button(
+                            onClick = {
+                                onSeleccionarCanal(canal)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor =
+                                    if (seleccionado) {
+                                        CineviloBlue
+                                    } else {
+                                        CineviloDark
+                                    },
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = canal.titulo,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
 
             else -> {
