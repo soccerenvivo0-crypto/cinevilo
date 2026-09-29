@@ -19,6 +19,190 @@ input,select{width:100%;padding:12px;background:#08090d;border:1px solid #333;bo
 button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;border:0;border-radius:7px;font-weight:bold;cursor:pointer}
 #estado{margin-top:15px;padding:12px;border-radius:7px}
 .hidden{display:none}
+
+/* =========================
+   DISEÑO SERIES / EPISODIOS
+   ========================= */
+
+.section-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+.section-header h2,
+.section-header h3{
+  margin:0 0 5px;
+}
+
+.section-header p{
+  margin:0;
+  color:#888;
+}
+
+.btn-primary,
+.btn-secondary{
+  border:0;
+  border-radius:8px;
+  padding:10px 15px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.btn-primary{
+  background:#2563ff;
+  color:#fff;
+}
+
+.btn-primary:hover{
+  background:#1d4ed8;
+  transform:translateY(-1px);
+}
+
+.btn-secondary{
+  background:#252831;
+  color:#ddd;
+}
+
+.btn-secondary:hover{
+  background:#323642;
+  color:#fff;
+}
+
+.form-container{
+  background:#0b0d12;
+  border:1px solid #292c35;
+  border-radius:12px;
+  padding:22px;
+  margin:20px 0;
+}
+
+.form-container h3{
+  margin:0 0 18px;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:15px;
+}
+
+.form-group{
+  margin-bottom:16px;
+}
+
+.form-group label{
+  margin:0 0 7px;
+  font-size:13px;
+  color:#aaa;
+}
+
+.form-group input,
+.form-group textarea,
+.form-container input,
+.form-container textarea{
+  width:100%;
+  padding:11px 12px;
+  background:#08090d;
+  border:1px solid #30333d;
+  border-radius:8px;
+  color:#fff;
+  outline:none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-container input:focus,
+.form-container textarea:focus{
+  border-color:#2563ff;
+}
+
+.form-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+}
+
+#listaTemporadas,
+#listaEpisodios{
+  display:grid;
+  gap:12px;
+  margin-top:18px;
+}
+
+#listaTemporadas > div,
+#listaEpisodios > div{
+  background:#0b0d12;
+  border:1px solid #292c35;
+  border-radius:10px;
+  padding:16px;
+}
+
+#listaTemporadas > div:hover,
+#listaEpisodios > div:hover{
+  border-color:#3b4050;
+}
+
+#episodios .card{
+  background:#101218;
+}
+
+#episodios h2{
+  font-size:24px;
+}
+
+#episodios h3{
+  font-size:18px;
+}
+
+.checkbox-group{
+  margin-top:8px;
+}
+
+.checkbox-group label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+}
+
+.checkbox-group input{
+  width:auto;
+}
+
+#episodioDuracionInfo{
+  min-height:42px;
+  display:flex;
+  align-items:center;
+}
+
+@media(max-width:700px){
+  main{
+    padding:18px;
+  }
+
+  .section-header{
+    align-items:stretch;
+  }
+
+  .section-header button{
+    width:100%;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  #listaTemporadas > div,
+  #listaEpisodios > div{
+    padding:13px;
+  }
+}
 </style>
 </head>
 <body>
@@ -162,7 +346,7 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 </section>
 
 
-<section id="episodios" style="display:none;">
+<section id="episodios" class="hidden">
   <div class="section-header">
     <div>
       <h2 id="tituloSerieEpisodios">Episodios</h2>
@@ -233,7 +417,10 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 
         <div class="form-group">
           <label>Duración</label>
-          <input type="text" id="episodioDuracion" placeholder="Ej. 45 min">
+          <div id="episodioDuracionInfo" style="padding:11px 12px;background:#151515;border:1px solid #333;border-radius:6px;color:#888;">
+            Se detectará automáticamente al agregar el video.
+          </div>
+          <input type="hidden" id="episodioDuracion" value="">
         </div>
 
         <div class="form-group">
@@ -249,7 +436,8 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 
       <div class="form-group">
         <label>URL del video</label>
-        <input type="url" id="episodioVideoUrl" placeholder="https://...">
+        <input type="url" id="episodioVideoUrl" placeholder="https://..."
+          oninput="detectarDuracionVideo(this.value)">
       </div>
 
       <div class="form-group checkbox-group">
@@ -486,6 +674,7 @@ function renderContenido(){
         <td style="padding:12px">${esOriginal(x) ? "✓" : "—"}</td>
         <td style="padding:12px">${esDestacado(x) ? "✓" : "—"}</td>
         <td style="padding:12px;white-space:nowrap">
+          ${tipo==="serie" ? `<button onclick="abrirEpisodios(${Number(x.id)})" style="background:#7c3aed;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer">EPISODIOS</button>` : ""}
           <button onclick="editarContenido(${Number(x.id)})" style="background:#2563ff;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer">EDITAR</button>
           <button onclick="eliminarContenido(${Number(x.id)})" style="background:#8b1e1e;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer;margin-left:5px">ELIMINAR</button>
         </td>
@@ -495,6 +684,19 @@ function renderContenido(){
 
 function filtrarContenido(filtro){
   filtroContenido=filtro;
+
+  const botones = document.querySelectorAll('[onclick^="filtrarContenido"]');
+
+  botones.forEach(boton => {
+    boton.style.background = "#333";
+  });
+
+  const botonActivo = document.querySelector('[onclick="filtrarContenido(\'' + filtro + '\')"]');
+
+  if (botonActivo) {
+    botonActivo.style.background = "#2563ff";
+  }
+
   renderContenido();
 }
 
@@ -954,6 +1156,60 @@ cargar();
 const API_TEMPORADAS = "https://cinevilo-api.soccerenvivo0.workers.dev/api/temporadas";
 const API_EPISODIOS = "https://cinevilo-api.soccerenvivo0.workers.dev/api/episodios";
 
+function detectarDuracionVideo(url) {
+  const info = document.getElementById("episodioDuracionInfo");
+  const campo = document.getElementById("episodioDuracion");
+
+  if (!info || !campo) return;
+
+  campo.value = "";
+  info.textContent = "Detectando duración...";
+
+  if (!url || !/\\.mp4(?:\\?|$)/i.test(url)) {
+    info.textContent = url
+      ? "La duración automática se detectará al procesar este tipo de video."
+      : "Se detectará automáticamente al agregar el video.";
+    return;
+  }
+
+  const video = document.createElement("video");
+  video.preload = "metadata";
+
+  video.onloadedmetadata = function() {
+    if (!isFinite(video.duration)) {
+      info.textContent = "No se pudo detectar la duración.";
+      return;
+    }
+
+    const total = Math.round(video.duration);
+    const horas = Math.floor(total / 3600);
+    const minutos = Math.floor((total % 3600) / 60);
+    const segundos = total % 60;
+
+    let texto = "";
+
+    if (horas > 0) {
+      texto = horas + " h " + minutos + " min";
+    } else if (minutos > 0) {
+      texto = minutos + " min";
+      if (segundos > 0) texto += " " + segundos + " s";
+    } else {
+      texto = segundos + " s";
+    }
+
+    campo.value = texto;
+    info.textContent = texto;
+  };
+
+  video.onerror = function() {
+    info.textContent = "No se pudo detectar la duración automáticamente.";
+    campo.value = "";
+  };
+
+  video.src = url;
+}
+
+
 let serieSeleccionadaId = null;
 let temporadaSeleccionadaId = null;
 let editandoTemporadaId = null;
@@ -977,11 +1233,11 @@ function abrirEpisodios(id) {
   editandoTemporadaId = null;
   editandoEpisodioId = null;
 
-  document.querySelectorAll("main section").forEach(sec => {
-    sec.style.display = "none";
+  document.querySelectorAll("main > section").forEach(sec => {
+    sec.classList.add("hidden");
   });
 
-  document.getElementById("episodios").style.display = "block";
+  document.getElementById("episodios").classList.remove("hidden");
 
   document.getElementById("tituloSerieEpisodios").textContent =
     "Episodios — " + serie.titulo;
@@ -999,11 +1255,26 @@ function abrirEpisodios(id) {
 function volverContenido() {
   serieSeleccionadaId = null;
   temporadaSeleccionadaId = null;
-  document.getElementById("episodios").style.display = "none";
 
-  if (typeof mostrarSeccion === "function") {
-    mostrarSeccion("contenido");
+  const episodios = document.getElementById("episodios");
+  if (episodios) {
+    episodios.classList.add("hidden");
   }
+
+  document.querySelectorAll("main > section").forEach(s => {
+    s.classList.add("hidden");
+  });
+
+  const contenido = document.getElementById("contenido");
+  if (contenido) {
+    contenido.classList.remove("hidden");
+  }
+
+  document.querySelectorAll("nav button").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  cargarContenidoAdmin();
 }
 
 async function cargarTemporadas() {
@@ -1128,10 +1399,16 @@ async function guardarTemporada() {
 
 async function editarTemporada(id) {
   try {
-    const r = await fetch(API_TEMPORADAS + "/" + id);
+    const r = await fetch(
+      API_TEMPORADAS + "?contenidoId=" + encodeURIComponent(serieSeleccionadaId)
+    );
+
     if (!r.ok) throw new Error("HTTP " + r.status);
 
-    const t = await r.json();
+    const lista = await r.json();
+    const t = lista.find(x => Number(x.id) === Number(id));
+
+    if (!t) throw new Error("Temporada no encontrada");
 
     editandoTemporadaId = Number(id);
 
@@ -1328,10 +1605,12 @@ async function guardarEpisodio() {
 
 async function editarEpisodio(id) {
   try {
-    const r = await fetch(API_EPISODIOS + "/" + id);
+    const r = await fetch(API_EPISODIOS + "?temporadaId=" + temporadaSeleccionadaId);
     if (!r.ok) throw new Error("HTTP " + r.status);
 
-    const e = await r.json();
+    const lista = await r.json();
+    const e = lista.find(x => Number(x.id) === Number(id));
+    if (!e) throw new Error("Episodio no encontrado");
 
     editandoEpisodioId = Number(id);
 
