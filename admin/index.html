@@ -328,12 +328,98 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 </section>
 
 <section id="destacados" class="hidden">
-<h1>Destacados</h1>
-<div class="card">
-  <h2>Contenido destacado</h2>
-  <p style="color:#888">Aquí gestionaremos el contenido que aparecerá como destacado en CINEVILO.</p>
-  <div id="listaDestacados" style="margin-top:20px"></div>
-</div>
+  <div class="section-header">
+    <div>
+      <h1>Destacados</h1>
+      <p>Organiza y controla cómo se descubre el contenido en CINEVILO.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Descubrimiento automático</h2>
+    <p style="color:#888">
+      Estas categorías podrán alimentarse automáticamente con las estadísticas e interacciones de los usuarios.
+    </p>
+
+    <div class="form-grid" style="margin-top:20px">
+
+      <div class="card" style="margin:0">
+        <h3>🆕 Estrenos</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Contenido añadido recientemente.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>🔥 Tendencias</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Contenido con mayor actividad reciente.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>▶️ Más reproducidas</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Contenido con más reproducciones.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>❤️ Más populares</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Contenido con mayor interacción positiva.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>💬 Más comentadas</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Contenido con mayor actividad de comentarios.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>Curaduría de CINEVILO</h2>
+    <p style="color:#888">
+      Selecciones controladas manualmente por el administrador.
+    </p>
+
+    <div class="form-grid" style="margin-top:20px">
+
+      <div class="card" style="margin:0">
+        <h3>⭐ Selección manual</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Elige y ordena contenido destacado.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>🎭 Por género</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Organiza selecciones especiales por género.
+        </p>
+      </div>
+
+      <div class="card" style="margin:0">
+        <h3>📅 Programación temporal</h3>
+        <p style="color:#888;margin:8px 0 0">
+          Prepara campañas y selecciones para fechas específicas.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>Contenido destacado actualmente</h2>
+    <p style="color:#888">
+      Aquí aparecerá el contenido marcado como destacado desde Contenido.
+    </p>
+    <div id="listaDestacados" style="margin-top:20px"></div>
+  </div>
 </section>
 
 <section id="originals" class="hidden">
@@ -823,6 +909,60 @@ function actualizarDashboard(){
   });
 }
 
+
+async function moverDestacado(id, direccion){
+  const lista = contenidos
+    .filter(esDestacado)
+    .sort((a,b)=>{
+      const ordenA = Number(valorContenido(a,"ordenDestacado",0)) || 0;
+      const ordenB = Number(valorContenido(b,"ordenDestacado",0)) || 0;
+      return ordenA - ordenB;
+    });
+
+
+  const posicion = lista.findIndex(x => Number(x.id) === Number(id));
+  const nuevaPosicion = posicion + direccion;
+
+
+  if(posicion < 0 || nuevaPosicion < 0 || nuevaPosicion >= lista.length){
+    return;
+  }
+
+  const elemento = lista.splice(posicion, 1)[0];
+  lista.splice(nuevaPosicion, 0, elemento);
+
+  try{
+    for(let i = 0; i < lista.length; i++){
+      const contenido = lista[i];
+      const nuevoOrden = i + 1;
+      const ordenActual = Number(valorContenido(contenido,"ordenDestacado",0)) || 0;
+
+      if(ordenActual === nuevoOrden){
+        continue;
+      }
+
+
+      const respuesta = await fetch(`${API_CONTENIDO}/${contenido.id}`,{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          ...contenido,
+          ordenDestacado:nuevoOrden
+        })
+      });
+
+      if(!respuesta.ok){
+        throw new Error(await respuesta.text());
+      }
+    }
+
+    await cargarContenidoAdmin();
+
+  }catch(e){
+    alert("No se pudo cambiar el orden: " + e.message);
+  }
+}
+
 function renderEspeciales(){
   const originals=document.getElementById("listaOriginals");
   const destacados=document.getElementById("listaDestacados");
@@ -834,11 +974,53 @@ function renderEspeciales(){
   }
 
   if(destacados){
-    destacados.innerHTML=contenidos.filter(esDestacado).length
-      ? contenidos.filter(esDestacado).map(x=>`<div style="padding:12px;border-bottom:1px solid #333">${escAdmin(valorContenido(x,"titulo","Sin título"))}</div>`).join("")
+    const listaDestacados = contenidos
+      .filter(esDestacado)
+      .sort((a,b)=>{
+        const ordenA = Number(valorContenido(a,"ordenDestacado",0)) || 0;
+        const ordenB = Number(valorContenido(b,"ordenDestacado",0)) || 0;
+        return ordenA - ordenB;
+      });
+
+    destacados.innerHTML = listaDestacados.length
+      ? listaDestacados.map((x,i)=>`
+          <div style="display:flex;align-items:center;gap:15px;padding:14px;border-bottom:1px solid #333">
+            <div style="min-width:40px;font-size:20px;font-weight:bold;color:#2563ff">
+              ${i + 1}
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:bold">${escAdmin(valorContenido(x,"titulo","Sin título"))}</div>
+              <div style="color:#777;font-size:13px;margin-top:4px">
+                ${escAdmin(valorContenido(x,"tipo","pelicula").toUpperCase())}
+                · Orden: ${Number(valorContenido(x,"ordenDestacado",0)) || 0}
+              </div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="save mover-destacado"
+                style="margin:0;padding:8px 12px"
+                data-id="${Number(x.id)}"
+                data-direccion="-1"
+                >↑</button>
+              <button class="save mover-destacado"
+                style="margin:0;padding:8px 12px"
+                data-id="${Number(x.id)}"
+                data-direccion="1">↓</button>
+            </div>
+          </div>
+        `).join("")
       : '<div style="color:#777">No hay contenido destacado.</div>';
   }
 }
+
+document.addEventListener("click", function(e){
+  const boton = e.target.closest(".mover-destacado");
+  if(!boton || boton.disabled) return;
+
+  const id = Number(boton.dataset.id);
+  const direccion = Number(boton.dataset.direccion);
+
+  moverDestacado(id, direccion);
+});
 
 function escAdmin(valor){
   return String(valor)
