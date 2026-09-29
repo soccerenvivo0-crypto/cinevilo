@@ -26,93 +26,1350 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 
 <div class="layout">
 <nav>
-<button class="active">Dashboard</button>
-<button>Contenido</button>
-<button>Series</button>
-<button>Destacados</button>
-<button>CINEVILO ORIGINALS</button>
-<button>EN VIVO</button>
-<button>Usuarios</button>
-<button>Estadísticas</button>
-<button>Configuración</button>
+<button class="active" onclick="mostrarSeccion('dashboard',this)">Dashboard</button>
+<button onclick="mostrarSeccion('contenido',this)">Contenido</button>
+<button onclick="mostrarSeccion('destacados',this)">Destacados</button>
+<button onclick="mostrarSeccion('originals',this)">CINEVILO ORIGINALS</button>
+<button onclick="mostrarSeccion('envivo',this)">EN VIVO</button>
+<button onclick="mostrarSeccion('usuarios',this)">Usuarios</button>
+<button onclick="mostrarSeccion('estadisticas',this)">Estadísticas</button>
+<button onclick="mostrarSeccion('configuracion',this)">Configuración</button>
 </nav>
 
 <main>
-<section id="envivo">
-<h1>EN VIVO</h1>
+
+<section id="dashboard">
+<h1>Dashboard</h1>
 <div class="card">
-<label>Título</label>
-<input id="titulo" value="CINEVILO EN VIVO">
-
-<label>Modo</label>
-<select id="modo">
-<option value="rtmp">RTMP</option>
-<option value="link">LINK</option>
-</select>
-
-<label>URL HLS</label>
-<input id="url" placeholder="http://93.189.90.20:8888/cinevilo/index.m3u8">
-
-<label>URL RTMP</label>
-<input id="rtmpUrl" placeholder="rtmp://93.189.90.20">
-
-<label>Clave RTMP</label>
-<input id="rtmpClave" placeholder="cinevilo">
-
-<label>
-<input id="activo" type="checkbox" style="width:auto">
- Transmisión activa
-</label>
-
-<button class="save" onclick="guardar()">GUARDAR TRANSMISIÓN</button>
-<div id="estado"></div>
+  <h2>Resumen de CINEVILO</h2>
+  <div id="dashboardStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-top:20px">
+    <div class="card"><strong>Contenido total</strong><div id="statContenido" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Películas</strong><div id="statPeliculas" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Series</strong><div id="statSeries" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Originals</strong><div id="statOriginals" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Destacados</strong><div id="statDestacados" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Canales en transmisión</strong><div id="statEnVivo" style="font-size:30px;margin-top:10px">—</div></div>
+  </div>
 </div>
 </section>
+
+<section id="contenido" class="hidden">
+<h1>Contenido</h1>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap">
+    <div>
+      <h2 style="margin:0">Películas y Series</h2>
+      <p style="color:#888">Gestiona todo el catálogo de CINEVILO desde un solo lugar.</p>
+    </div>
+    <button class="save" onclick="mostrarFormularioContenido()">+ AGREGAR CONTENIDO</button>
+  </div>
+
+  <div id="formContenido" class="hidden" style="margin-top:25px;border-top:1px solid #333;padding-top:20px">
+    <h2 id="tituloFormContenido">Nuevo contenido</h2>
+
+    <label>Tipo</label>
+    <select id="contenidoTipo">
+      <option value="pelicula">Película</option>
+      <option value="serie">Serie</option>
+    </select>
+
+    <label>Título</label>
+    <input id="contenidoTitulo" placeholder="Título">
+
+    <label>Descripción</label>
+    <textarea id="contenidoDescripcion" placeholder="Descripción" style="width:100%;min-height:100px;padding:12px;background:#08090d;border:1px solid #333;border-radius:7px;color:#fff"></textarea>
+
+    <label>Año</label>
+    <input id="contenidoAnio" type="number" placeholder="2026">
+
+    <label>Géneros</label>
+    <input id="contenidoGeneros" placeholder="Terror, Suspenso, Drama">
+
+    <label>Portada URL</label>
+    <input id="contenidoPortada" placeholder="https://...">
+
+    <label>Banner URL</label>
+    <input id="contenidoBanner" placeholder="https://...">
+
+    <label>URL del video</label>
+    <input id="contenidoVideo" placeholder="https://...mp4 o https://...m3u8">
+
+    <label>
+      <input id="contenidoOriginal" type="checkbox" style="width:auto">
+      CINEVILO ORIGINAL
+    </label>
+
+    <label>
+      <input id="contenidoDestacado" type="checkbox" style="width:auto">
+      DESTACADO
+    </label>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="save" onclick="guardarContenido()">GUARDAR CONTENIDO</button>
+      <button class="save" onclick="cancelarContenido()" style="background:#444">CANCELAR</button>
+    </div>
+
+    <div id="estadoContenido" style="margin-top:15px"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+    <button onclick="filtrarContenido('todos')" class="save" style="margin:0">TODOS</button>
+    <button onclick="filtrarContenido('pelicula')" class="save" style="margin:0;background:#333">PELÍCULAS</button>
+    <button onclick="filtrarContenido('serie')" class="save" style="margin:0;background:#333">SERIES</button>
+    <button onclick="filtrarContenido('original')" class="save" style="margin:0;background:#333">ORIGINALS</button>
+    <input id="buscarContenido" placeholder="Buscar contenido..." oninput="renderContenido()" style="max-width:300px">
+  </div>
+
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid #333;text-align:left">
+          <th style="padding:12px">Portada</th>
+          <th style="padding:12px">Título</th>
+          <th style="padding:12px">Tipo</th>
+          <th style="padding:12px">Género</th>
+          <th style="padding:12px">Año</th>
+          <th style="padding:12px">Original</th>
+          <th style="padding:12px">Destacado</th>
+          <th style="padding:12px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaContenido"></tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<section id="destacados" class="hidden">
+<h1>Destacados</h1>
+<div class="card">
+  <h2>Contenido destacado</h2>
+  <p style="color:#888">Aquí gestionaremos el contenido que aparecerá como destacado en CINEVILO.</p>
+  <div id="listaDestacados" style="margin-top:20px"></div>
+</div>
+</section>
+
+<section id="originals" class="hidden">
+<h1>CINEVILO ORIGINALS</h1>
+<div class="card">
+  <h2>Producciones originales</h2>
+  <p style="color:#888">Esta sección mostrará automáticamente el contenido marcado como CINEVILO ORIGINAL.</p>
+  <div id="listaOriginals" style="margin-top:20px"></div>
+</div>
+</section>
+
+
+<section id="episodios" style="display:none;">
+  <div class="section-header">
+    <div>
+      <h2 id="tituloSerieEpisodios">Episodios</h2>
+      <p>Gestiona temporadas y episodios de esta serie.</p>
+    </div>
+    <button class="btn-secondary" onclick="volverContenido()">← Volver a Contenido</button>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      <div>
+        <h3>Temporadas</h3>
+        <p id="infoSerieEpisodios"></p>
+      </div>
+      <button class="btn-primary" onclick="mostrarFormularioTemporada()">+ Nueva temporada</button>
+    </div>
+
+    <div id="formTemporada" style="display:none;" class="form-container">
+      <h3 id="tituloFormTemporada">Nueva temporada</h3>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Número de temporada</label>
+          <input type="number" id="temporadaNumero" min="1" value="1">
+        </div>
+
+        <div class="form-group">
+          <label>Título</label>
+          <input type="text" id="temporadaTitulo" placeholder="Ej. Temporada 1">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="temporadaDescripcion" rows="3" placeholder="Descripción de la temporada"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" onclick="guardarTemporada()">Guardar temporada</button>
+        <button class="btn-secondary" onclick="cancelarTemporada()">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="listaTemporadas"></div>
+  </div>
+
+  <div id="panelEpisodios" class="card" style="display:none;">
+    <div class="section-header">
+      <div>
+        <h3 id="tituloTemporadaSeleccionada">Episodios</h3>
+      </div>
+      <button class="btn-primary" onclick="mostrarFormularioEpisodio()">+ Nuevo episodio</button>
+    </div>
+
+    <div id="formEpisodio" style="display:none;" class="form-container">
+      <h3 id="tituloFormEpisodio">Nuevo episodio</h3>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Número de episodio</label>
+          <input type="number" id="episodioNumero" min="1" value="1">
+        </div>
+
+        <div class="form-group">
+          <label>Título</label>
+          <input type="text" id="episodioTitulo" placeholder="Ej. El comienzo">
+        </div>
+
+        <div class="form-group">
+          <label>Duración</label>
+          <input type="text" id="episodioDuracion" placeholder="Ej. 45 min">
+        </div>
+
+        <div class="form-group">
+          <label>Miniatura</label>
+          <input type="url" id="episodioThumbnailUrl" placeholder="https://...">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="episodioDescripcion" rows="3" placeholder="Descripción del episodio"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>URL del video</label>
+        <input type="url" id="episodioVideoUrl" placeholder="https://...">
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label>
+          <input type="checkbox" id="episodioPublicado">
+          Publicado
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" onclick="guardarEpisodio()">Guardar episodio</button>
+        <button class="btn-secondary" onclick="cancelarEpisodio()">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="listaEpisodios"></div>
+  </div>
+</section>
+
+<section id="envivo">
+<h1>EN VIVO</h1>
+
+<div class="card">
+  <label>Título</label>
+  <input id="titulo" placeholder="Nombre de la transmisión">
+
+  <label>Modo</label>
+  <select id="modo" onchange="actualizarModo()">
+    <option value="rtmp">RTMP</option>
+    <option value="link">LINK</option>
+  </select>
+
+  <label>URL HLS</label>
+  <input id="url" placeholder="https://servidor.com/canal/index.m3u8">
+
+  <div id="camposRtmp">
+    <label>URL RTMP</label>
+    <input id="rtmpUrl" placeholder="rtmp://servidor.com">
+
+    <label>Clave RTMP</label>
+    <input id="rtmpClave" placeholder="clave-de-transmision">
+  </div>
+
+  <label>
+    <input id="activo" type="checkbox" style="width:auto">
+    Transmisión activa
+  </label>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="save" id="btnGuardar" onclick="guardar()">GUARDAR TRANSMISIÓN</button>
+    <button class="save" id="btnCancelar" onclick="cancelarEdicion()" style="display:none;background:#444">
+      CANCELAR EDICIÓN
+    </button>
+  </div>
+
+  <div id="estado"></div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap">
+    <h2 style="margin:0">TRANSMISIONES GUARDADAS</h2>
+    <input
+      id="buscarEnvivo"
+      placeholder="Buscar transmisión..."
+      oninput="renderTabla()"
+      style="max-width:300px"
+    >
+  </div>
+
+  <div style="overflow-x:auto;margin-top:20px">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid #333;text-align:left">
+          <th style="padding:12px">Título</th>
+          <th style="padding:12px">Modo</th>
+          <th style="padding:12px">Estado</th>
+          <th style="padding:12px">URL</th>
+          <th style="padding:12px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaEnvivo"></tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<section id="usuarios" class="hidden">
+<h1>Usuarios</h1>
+<div class="card">
+  <h2>Usuarios registrados</h2>
+  <p style="color:#888">Aquí gestionaremos los usuarios de CINEVILO.</p>
+</div>
+</section>
+
+<section id="estadisticas" class="hidden">
+<h1>Estadísticas</h1>
+<div class="card">
+  <h2>Estadísticas de CINEVILO</h2>
+  <p style="color:#888">Aquí veremos reproducciones, usuarios, contenido más visto, tiempo de reproducción y estadísticas de EN VIVO.</p>
+</div>
+</section>
+
+<section id="configuracion" class="hidden">
+<h1>Configuración</h1>
+<div class="card">
+  <h2>Configuración de CINEVILO</h2>
+  <p style="color:#888">Configuración general del administrador y de la plataforma.</p>
+</div>
+</section>
+
 </main>
 </div>
+
+
+<script>
+const API_CONTENIDO="https://cinevilo-api.soccerenvivo0.workers.dev/api/contenido";
+let contenidos=[];
+let filtroContenido="todos";
+let editandoContenidoId=null;
+
+function mostrarSeccion(id, boton){
+  document.querySelectorAll("main > section").forEach(s=>s.classList.add("hidden"));
+  const seccion=document.getElementById(id);
+  if(seccion) seccion.classList.remove("hidden");
+
+  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+  if(boton) boton.classList.add("active");
+
+  if(id==="contenido" || id==="dashboard" || id==="destacados" || id==="originals"){
+    cargarContenidoAdmin();
+  }
+}
+
+async function cargarContenidoAdmin(){
+  try{
+    const r=await fetch(API_CONTENIDO);
+    if(!r.ok) throw new Error(await r.text());
+
+    contenidos=await r.json();
+    if(!Array.isArray(contenidos)) contenidos=[];
+    renderContenido();
+    actualizarDashboard();
+    renderEspeciales();
+  }catch(e){
+    const tabla=document.getElementById("tablaContenido");
+    if(tabla){
+      tabla.innerHTML='<tr><td colspan="8" style="padding:25px;color:#ff8b8b">Error cargando contenido: '+escAdmin(e.message)+'</td></tr>';
+    }
+  }
+}
+
+function mostrarFormularioContenido(){
+  document.getElementById("formContenido").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function cancelarContenido(){
+  editandoContenidoId=null;
+  document.getElementById("formContenido").classList.add("hidden");
+  limpiarFormularioContenido();
+}
+
+function limpiarFormularioContenido(){
+  ["contenidoTitulo","contenidoDescripcion","contenidoAnio","contenidoGeneros","contenidoPortada","contenidoBanner","contenidoVideo"].forEach(id=>{
+    document.getElementById(id).value="";
+  });
+  document.getElementById("contenidoTipo").value="pelicula";
+  document.getElementById("contenidoOriginal").checked=false;
+  document.getElementById("contenidoDestacado").checked=false;
+  document.getElementById("tituloFormContenido").textContent="Nuevo contenido";
+  document.querySelector("#formContenido .save").textContent="GUARDAR CONTENIDO";
+}
+
+function valorContenido(x,nombre,alternativa=""){
+  return x && x[nombre] !== undefined && x[nombre] !== null ? x[nombre] : alternativa;
+}
+
+function tipoNormalizado(x){
+  return String(valorContenido(x,"tipo","pelicula")).toLowerCase();
+}
+
+function esOriginal(x){
+  return Number(valorContenido(x,"esOriginal",0))===1 || x.esOriginal===true;
+}
+
+function esDestacado(x){
+  return Number(valorContenido(x,"destacado",0))===1 || x.destacado===true;
+}
+
+function renderContenido(){
+  const tbody=document.getElementById("tablaContenido");
+  if(!tbody) return;
+
+  const busqueda=(document.getElementById("buscarContenido").value||"").toLowerCase().trim();
+
+  const lista=contenidos.filter(x=>{
+    const tipo=tipoNormalizado(x);
+
+    if(filtroContenido==="pelicula" && tipo!=="pelicula" && tipo!=="película") return false;
+    if(filtroContenido==="serie" && tipo!=="serie") return false;
+    if(filtroContenido==="original" && !esOriginal(x)) return false;
+
+    const texto=[
+      valorContenido(x,"titulo"),
+      valorContenido(x,"genero"),
+      valorContenido(x,"generos"),
+      valorContenido(x,"anio")
+    ].join(" ").toLowerCase();
+
+    return !busqueda || texto.includes(busqueda);
+  });
+
+  if(!lista.length){
+    tbody.innerHTML='<tr><td colspan="8" style="padding:25px;text-align:center;color:#777">No hay contenido.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML=lista.map(x=>{
+    const portada=valorContenido(x,"portadaUrl","");
+    const generos=Array.isArray(x.genero) ? x.genero.join(", ") :
+                  Array.isArray(x.generos) ? x.generos.join(", ") :
+                  valorContenido(x,"genero","");
+    const tipo=tipoNormalizado(x);
+
+    return `
+      <tr style="border-bottom:1px solid #242630">
+        <td style="padding:12px">
+          ${portada ? `<img src="${escAdmin(portada)}" style="width:55px;height:75px;object-fit:cover;border-radius:5px">` : "—"}
+        </td>
+        <td style="padding:12px;font-weight:bold">${escAdmin(valorContenido(x,"titulo","Sin título"))}</td>
+        <td style="padding:12px">${tipo==="serie" ? "Serie" : "Película"}</td>
+        <td style="padding:12px">${escAdmin(generos||"—")}</td>
+        <td style="padding:12px">${escAdmin(valorContenido(x,"anio","—"))}</td>
+        <td style="padding:12px">${esOriginal(x) ? "✓" : "—"}</td>
+        <td style="padding:12px">${esDestacado(x) ? "✓" : "—"}</td>
+        <td style="padding:12px;white-space:nowrap">
+          <button onclick="editarContenido(${Number(x.id)})" style="background:#2563ff;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer">EDITAR</button>
+          <button onclick="eliminarContenido(${Number(x.id)})" style="background:#8b1e1e;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer;margin-left:5px">ELIMINAR</button>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+function filtrarContenido(filtro){
+  filtroContenido=filtro;
+  renderContenido();
+}
+
+function editarContenido(id){
+  const x=contenidos.find(v=>Number(v.id)===Number(id));
+  if(!x) return;
+
+  editandoContenidoId=Number(x.id);
+
+  document.getElementById("contenidoTipo").value=tipoNormalizado(x)==="serie" ? "serie" : "pelicula";
+  document.getElementById("contenidoTitulo").value=valorContenido(x,"titulo","");
+  document.getElementById("contenidoDescripcion").value=valorContenido(x,"descripcion","");
+  document.getElementById("contenidoAnio").value=valorContenido(x,"anio","");
+  document.getElementById("contenidoGeneros").value=Array.isArray(x.genero) ? x.genero.join(", ") : (Array.isArray(x.generos) ? x.generos.join(", ") : valorContenido(x,"genero",""));
+  document.getElementById("contenidoPortada").value=valorContenido(x,"portadaUrl","");
+  document.getElementById("contenidoBanner").value=valorContenido(x,"bannerUrl","");
+  document.getElementById("contenidoVideo").value=valorContenido(x,"videoUrl","");
+  document.getElementById("contenidoOriginal").checked=esOriginal(x);
+  document.getElementById("contenidoDestacado").checked=esDestacado(x);
+
+  document.getElementById("tituloFormContenido").textContent="Editar contenido";
+  document.querySelector("#formContenido .save").textContent="ACTUALIZAR CONTENIDO";
+  document.getElementById("formContenido").classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function guardarContenido(){
+  const titulo=document.getElementById("contenidoTitulo").value.trim();
+
+  if(!titulo){
+    mostrarEstadoContenido("Escribe un título.",true);
+    return;
+  }
+
+  const generos=document.getElementById("contenidoGeneros").value
+    .split(",").map(x=>x.trim()).filter(Boolean);
+
+  const datos={
+    tipo:document.getElementById("contenidoTipo").value,
+    titulo,
+    descripcion:document.getElementById("contenidoDescripcion").value.trim(),
+    anio:Number(document.getElementById("contenidoAnio").value)||0,
+    genero:generos.join(", "),
+    portadaUrl:document.getElementById("contenidoPortada").value.trim(),
+    bannerUrl:document.getElementById("contenidoBanner").value.trim(),
+    videoUrl:document.getElementById("contenidoVideo").value.trim(),
+    esOriginal:document.getElementById("contenidoOriginal").checked ? 1 : 0,
+    destacado:document.getElementById("contenidoDestacado").checked ? 1 : 0
+  };
+
+  try{
+    const url=editandoContenidoId===null
+      ? API_CONTENIDO
+      : API_CONTENIDO+"/"+editandoContenidoId;
+
+    const r=await fetch(url,{
+      method:editandoContenidoId===null ? "POST" : "PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(datos)
+    });
+
+    const t=await r.text();
+    if(!r.ok) throw new Error(t);
+
+    mostrarEstadoContenido(editandoContenidoId===null ? "✓ CONTENIDO GUARDADO" : "✓ CONTENIDO ACTUALIZADO");
+    editandoContenidoId=null;
+    limpiarFormularioContenido();
+    document.getElementById("formContenido").classList.add("hidden");
+    await cargarContenidoAdmin();
+
+  }catch(e){
+    mostrarEstadoContenido("Error guardando: "+e.message,true);
+  }
+}
+
+async function eliminarContenido(id){
+  const x=contenidos.find(v=>Number(v.id)===Number(id));
+  if(!x) return;
+
+  if(!confirm("¿Eliminar el contenido '"+valorContenido(x,"titulo","")+"'?")) return;
+
+  try{
+    const r=await fetch(API_CONTENIDO+"/"+id,{method:"DELETE"});
+    const t=await r.text();
+
+    if(!r.ok) throw new Error(t);
+
+    await cargarContenidoAdmin();
+  }catch(e){
+    mostrarEstadoContenido("Error eliminando: "+e.message,true);
+  }
+}
+
+function mostrarEstadoContenido(texto,error=false){
+  const e=document.getElementById("estadoContenido");
+  e.textContent=texto;
+  e.style.background=error ? "#3a1515" : "#12351f";
+  e.style.color=error ? "#ff8b8b" : "#7dff9b";
+  e.style.padding="12px";
+  e.style.borderRadius="7px";
+}
+
+function actualizarDashboard(){
+  const peliculas=contenidos.filter(x=>{
+    const t=tipoNormalizado(x);
+    return t==="pelicula" || t==="película";
+  }).length;
+
+  const series=contenidos.filter(x=>tipoNormalizado(x)==="serie").length;
+  const originals=contenidos.filter(esOriginal).length;
+  const destacados=contenidos.filter(esDestacado).length;
+
+  const asignaciones={
+    statContenido:contenidos.length,
+    statPeliculas:peliculas,
+    statSeries:series,
+    statOriginals:originals,
+    statDestacados:destacados
+  };
+
+  Object.entries(asignaciones).forEach(([id,valor])=>{
+    const e=document.getElementById(id);
+    if(e) e.textContent=valor;
+  });
+}
+
+function renderEspeciales(){
+  const originals=document.getElementById("listaOriginals");
+  const destacados=document.getElementById("listaDestacados");
+
+  if(originals){
+    originals.innerHTML=contenidos.filter(esOriginal).length
+      ? contenidos.filter(esOriginal).map(x=>`<div style="padding:12px;border-bottom:1px solid #333">${escAdmin(valorContenido(x,"titulo","Sin título"))}</div>`).join("")
+      : '<div style="color:#777">No hay CINEVILO ORIGINALS.</div>';
+  }
+
+  if(destacados){
+    destacados.innerHTML=contenidos.filter(esDestacado).length
+      ? contenidos.filter(esDestacado).map(x=>`<div style="padding:12px;border-bottom:1px solid #333">${escAdmin(valorContenido(x,"titulo","Sin título"))}</div>`).join("")
+      : '<div style="color:#777">No hay contenido destacado.</div>';
+  }
+}
+
+function escAdmin(valor){
+  return String(valor)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  cargarContenidoAdmin();
+  mostrarSeccion("dashboard",document.querySelector("nav button"));
+});
+</script>
 
 <script>
 const API="https://cinevilo-api.soccerenvivo0.workers.dev/api/en-vivo";
 
+let transmisiones=[];
+let editandoId=null;
+
+const $ = id => document.getElementById(id);
+
+function mostrarEstado(texto, error=false){
+  $("estado").textContent=texto;
+  $("estado").style.background=error ? "#3a1515" : "#12351f";
+  $("estado").style.color=error ? "#ff8b8b" : "#7dff9b";
+}
+
+function actualizarModo(){
+  const modo=$("modo").value;
+  $("camposRtmp").style.display=modo==="rtmp" ? "block" : "none";
+}
+
 async function cargar(){
- try{
-  const r=await fetch(API);
-  const datos=await r.json();
-  const x=datos.find(v=>Number(v.activo)===1)||datos[0];
-  if(!x)return;
-  document.getElementById("titulo").value=x.titulo||"";
-  document.getElementById("modo").value=x.modo||"rtmp";
-  document.getElementById("url").value=x.url||"";
-  document.getElementById("rtmpUrl").value=x.rtmpUrl||"";
-  document.getElementById("rtmpClave").value=x.rtmpClave||"";
-  document.getElementById("activo").checked=Number(x.activo)===1;
-  estado.textContent="✓ Configuración cargada desde CINEVILO.";
- }catch(e){estado.textContent="Error cargando: "+e.message}
+  try{
+    const r=await fetch(API);
+    if(!r.ok) throw new Error(await r.text());
+
+    transmisiones=await r.json();
+    renderTabla();
+
+    if(editandoId===null){
+      limpiarFormulario();
+    }
+
+  }catch(e){
+    mostrarEstado("Error cargando transmisiones: "+e.message,true);
+  }
+}
+
+function renderTabla(){
+  const tbody=$("tablaEnvivo");
+  const busqueda=($("buscarEnvivo").value||"").toLowerCase().trim();
+
+  const lista=transmisiones.filter(x=>{
+    return (x.titulo||"").toLowerCase().includes(busqueda) ||
+           (x.modo||"").toLowerCase().includes(busqueda) ||
+           (x.url||"").toLowerCase().includes(busqueda);
+  });
+
+  if(!lista.length){
+    tbody.innerHTML=`
+      <tr>
+        <td colspan="5" style="padding:25px;text-align:center;color:#777">
+          No hay transmisiones.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML=lista.map(x=>{
+    const activo=Number(x.activo)===1;
+
+    return `
+      <tr style="border-bottom:1px solid #242630">
+        <td style="padding:12px;font-weight:bold">${esc(x.titulo||"Sin título")}</td>
+
+        <td style="padding:12px">
+          <span style="
+            display:inline-block;
+            padding:5px 9px;
+            border-radius:5px;
+            background:${x.modo==="rtmp" ? "#263b70" : "#3b2c18"};
+          ">
+            ${x.modo==="rtmp" ? "RTMP" : "LINK"}
+          </span>
+        </td>
+
+        <td style="padding:12px">
+          <button
+            onclick="cambiarEstado(${x.id})"
+            style="
+              border:0;
+              border-radius:6px;
+              padding:7px 10px;
+              cursor:pointer;
+              background:${activo ? "#164d2a" : "#3a2020"};
+              color:${activo ? "#7dff9b" : "#ff8b8b"};
+            "
+          >
+            ${activo ? "ACTIVA" : "INACTIVA"}
+          </button>
+        </td>
+
+        <td style="padding:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${esc(x.url||"")}
+        </td>
+
+        <td style="padding:12px;white-space:nowrap">
+          <button
+            onclick="editar(${x.id})"
+            style="background:#2563ff;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer"
+          >
+            EDITAR
+          </button>
+
+          <button
+            onclick="eliminar(${x.id})"
+            style="background:#8b1e1e;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer;margin-left:5px"
+          >
+            ELIMINAR
+          </button>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+function esc(valor){
+  return String(valor)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function limpiarFormulario(){
+  editandoId=null;
+
+  $("titulo").value="";
+  $("modo").value="rtmp";
+  $("url").value="";
+  $("rtmpUrl").value="";
+  $("rtmpClave").value="";
+  $("activo").checked=false;
+
+  $("btnGuardar").textContent="GUARDAR TRANSMISIÓN";
+  $("btnCancelar").style.display="none";
+
+  actualizarModo();
+}
+
+function editar(id){
+  const x=transmisiones.find(v=>Number(v.id)===Number(id));
+  if(!x) return;
+
+  editandoId=Number(x.id);
+
+  $("titulo").value=x.titulo||"";
+  $("modo").value=x.modo||"rtmp";
+  $("url").value=x.url||"";
+  $("rtmpUrl").value=x.rtmpUrl||"";
+  $("rtmpClave").value=x.rtmpClave||"";
+  $("activo").checked=Number(x.activo)===1;
+
+  $("btnGuardar").textContent="ACTUALIZAR TRANSMISIÓN";
+  $("btnCancelar").style.display="inline-block";
+
+  actualizarModo();
+
+  window.scrollTo({top:0,behavior:"smooth"});
+  mostrarEstado("Editando: "+(x.titulo||"transmisión"));
+}
+
+function cancelarEdicion(){
+  limpiarFormulario();
+  $("estado").textContent="";
 }
 
 async function guardar(){
- const datos={
-  titulo:document.getElementById("titulo").value,
-  modo:document.getElementById("modo").value,
-  url:document.getElementById("url").value,
-  rtmpUrl:document.getElementById("rtmpUrl").value,
-  rtmpClave:document.getElementById("rtmpClave").value,
-  activo:document.getElementById("activo").checked?1:0
- };
- try{
-  const r=await fetch(API,{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify(datos)
-  });
-  const t=await r.text();
-  if(!r.ok)throw new Error(t);
-  estado.textContent="✓ TRANSMISIÓN GUARDADA";
-  cargar();
- }catch(e){estado.textContent="Error guardando: "+e.message}
+  const titulo=$("titulo").value.trim();
+  const modo=$("modo").value;
+  const url=$("url").value.trim();
+  const rtmpUrl=$("rtmpUrl").value.trim();
+  const rtmpClave=$("rtmpClave").value.trim();
+  const activo=$("activo").checked ? 1 : 0;
+
+  if(!titulo){
+    mostrarEstado("Escribe un título.",true);
+    return;
+  }
+
+  if(!url){
+    mostrarEstado("Escribe la URL HLS.",true);
+    return;
+  }
+
+  if(modo==="rtmp" && (!rtmpUrl || !rtmpClave)){
+    mostrarEstado("Para RTMP debes indicar la URL RTMP y la clave.",true);
+    return;
+  }
+
+  const datos={
+    titulo,
+    modo,
+    url,
+    rtmpUrl:modo==="rtmp" ? rtmpUrl : "",
+    rtmpClave:modo==="rtmp" ? rtmpClave : "",
+    activo
+  };
+
+  try{
+    let r;
+
+    if(editandoId!==null){
+      r=await fetch(API+"/"+editandoId,{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(datos)
+      });
+    }else{
+      r=await fetch(API,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(datos)
+      });
+    }
+
+    const t=await r.text();
+
+    if(!r.ok) throw new Error(t);
+
+    mostrarEstado(editandoId!==null
+      ? "✓ TRANSMISIÓN ACTUALIZADA"
+      : "✓ TRANSMISIÓN GUARDADA"
+    );
+
+    limpiarFormulario();
+    await cargar();
+
+  }catch(e){
+    mostrarEstado("Error guardando: "+e.message,true);
+  }
 }
 
+async function cambiarEstado(id){
+  const x=transmisiones.find(v=>Number(v.id)===Number(id));
+  if(!x) return;
+
+  const nuevoEstado=Number(x.activo)===1 ? 0 : 1;
+
+  try{
+    const r=await fetch(API+"/"+id,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        titulo:x.titulo||"",
+        modo:x.modo||"link",
+        url:x.url||"",
+        rtmpUrl:x.rtmpUrl||"",
+        rtmpClave:x.rtmpClave||"",
+        activo:nuevoEstado
+      })
+    });
+
+    const t=await r.text();
+    if(!r.ok) throw new Error(t);
+
+    await cargar();
+    mostrarEstado(nuevoEstado ? "✓ Transmisión activada" : "✓ Transmisión desactivada");
+
+  }catch(e){
+    mostrarEstado("Error cambiando estado: "+e.message,true);
+  }
+}
+
+async function eliminar(id){
+  const x=transmisiones.find(v=>Number(v.id)===Number(id));
+  if(!x) return;
+
+  if(!confirm("¿Eliminar la transmisión '"+(x.titulo||"")+"'?")){
+    return;
+  }
+
+  try{
+    const r=await fetch(API+"/"+id,{
+      method:"DELETE"
+    });
+
+    const t=await r.text();
+
+    if(!r.ok) throw new Error(t);
+
+    if(editandoId===Number(id)){
+      limpiarFormulario();
+    }
+
+    await cargar();
+    mostrarEstado("✓ TRANSMISIÓN ELIMINADA");
+
+  }catch(e){
+    mostrarEstado("Error eliminando: "+e.message,true);
+  }
+}
+
+actualizarModo();
 cargar();
+
+/* =========================
+   GESTIÓN DE SERIES / EPISODIOS
+   ========================= */
+
+const API_TEMPORADAS = "https://cinevilo-api.soccerenvivo0.workers.dev/api/temporadas";
+const API_EPISODIOS = "https://cinevilo-api.soccerenvivo0.workers.dev/api/episodios";
+
+let serieSeleccionadaId = null;
+let temporadaSeleccionadaId = null;
+let editandoTemporadaId = null;
+let editandoEpisodioId = null;
+
+function abrirEpisodios(id) {
+  const serie = contenidos.find(c => Number(c.id) === Number(id));
+
+  if (!serie) {
+    alert("No se encontró la serie.");
+    return;
+  }
+
+  if (String(serie.tipo).toLowerCase() !== "serie") {
+    alert("Los episodios solo están disponibles para series.");
+    return;
+  }
+
+  serieSeleccionadaId = Number(id);
+  temporadaSeleccionadaId = null;
+  editandoTemporadaId = null;
+  editandoEpisodioId = null;
+
+  document.querySelectorAll("main section").forEach(sec => {
+    sec.style.display = "none";
+  });
+
+  document.getElementById("episodios").style.display = "block";
+
+  document.getElementById("tituloSerieEpisodios").textContent =
+    "Episodios — " + serie.titulo;
+
+  document.getElementById("infoSerieEpisodios").textContent =
+    "Serie: " + serie.titulo;
+
+  document.getElementById("panelEpisodios").style.display = "none";
+  document.getElementById("formTemporada").style.display = "none";
+  document.getElementById("formEpisodio").style.display = "none";
+
+  cargarTemporadas();
+}
+
+function volverContenido() {
+  serieSeleccionadaId = null;
+  temporadaSeleccionadaId = null;
+  document.getElementById("episodios").style.display = "none";
+
+  if (typeof mostrarSeccion === "function") {
+    mostrarSeccion("contenido");
+  }
+}
+
+async function cargarTemporadas() {
+  if (!serieSeleccionadaId) return;
+
+  try {
+    const r = await fetch(
+      API_TEMPORADAS + "?contenidoId=" + encodeURIComponent(serieSeleccionadaId)
+    );
+
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    const data = await r.json();
+    const temporadas = Array.isArray(data) ? data : (data.temporadas || []);
+
+    renderTemporadas(temporadas);
+  } catch (e) {
+    console.error(e);
+    document.getElementById("listaTemporadas").innerHTML =
+      '<div class="empty-state">No se pudieron cargar las temporadas.</div>';
+  }
+}
+
+function renderTemporadas(temporadas) {
+  const cont = document.getElementById("listaTemporadas");
+
+  if (!temporadas.length) {
+    cont.innerHTML =
+      '<div class="empty-state">Esta serie todavía no tiene temporadas.</div>';
+    return;
+  }
+
+  cont.innerHTML = temporadas.map(t => `
+    <div class="content-row">
+      <div>
+        <strong>Temporada ${esc(t.numero)}</strong>
+        ${t.titulo ? `<div>${esc(t.titulo)}</div>` : ""}
+        ${t.descripcion ? `<small>${esc(t.descripcion)}</small>` : ""}
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" onclick="seleccionarTemporada(${Number(t.id)}, '${esc(String(t.titulo || "Temporada " + t.numero)).replace(/'/g, "\\'")}')">
+          EPISODIOS
+        </button>
+        <button class="btn-secondary" onclick="editarTemporada(${Number(t.id)})">
+          EDITAR
+        </button>
+        <button class="btn-danger" onclick="eliminarTemporada(${Number(t.id)})">
+          ELIMINAR
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function mostrarFormularioTemporada() {
+  editandoTemporadaId = null;
+
+  document.getElementById("tituloFormTemporada").textContent =
+    "Nueva temporada";
+
+  document.getElementById("temporadaNumero").value = 1;
+  document.getElementById("temporadaTitulo").value = "";
+  document.getElementById("temporadaDescripcion").value = "";
+
+  document.getElementById("formTemporada").style.display = "block";
+}
+
+function cancelarTemporada() {
+  editandoTemporadaId = null;
+  document.getElementById("formTemporada").style.display = "none";
+}
+
+async function guardarTemporada() {
+  if (!serieSeleccionadaId) return;
+
+  const numero = Number(document.getElementById("temporadaNumero").value);
+  const titulo = document.getElementById("temporadaTitulo").value.trim();
+  const descripcion = document.getElementById("temporadaDescripcion").value.trim();
+
+  if (!numero || numero < 1) {
+    alert("El número de temporada es obligatorio.");
+    return;
+  }
+
+  const payload = {
+    contenidoId: serieSeleccionadaId,
+    numero,
+    titulo,
+    descripcion
+  };
+
+  try {
+    const url = editandoTemporadaId
+      ? API_TEMPORADAS + "/" + editandoTemporadaId
+      : API_TEMPORADAS;
+
+    const method = editandoTemporadaId ? "PUT" : "POST";
+
+    const r = await fetch(url, {
+      method,
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(txt || "HTTP " + r.status);
+    }
+
+    alert(editandoTemporadaId
+      ? "Temporada actualizada correctamente."
+      : "Temporada creada correctamente.");
+
+    cancelarTemporada();
+    await cargarTemporadas();
+  } catch (e) {
+    console.error(e);
+    alert("Error al guardar la temporada.");
+  }
+}
+
+async function editarTemporada(id) {
+  try {
+    const r = await fetch(API_TEMPORADAS + "/" + id);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    const t = await r.json();
+
+    editandoTemporadaId = Number(id);
+
+    document.getElementById("tituloFormTemporada").textContent =
+      "Editar temporada";
+
+    document.getElementById("temporadaNumero").value = t.numero || 1;
+    document.getElementById("temporadaTitulo").value = t.titulo || "";
+    document.getElementById("temporadaDescripcion").value = t.descripcion || "";
+
+    document.getElementById("formTemporada").style.display = "block";
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo cargar la temporada.");
+  }
+}
+
+async function eliminarTemporada(id) {
+  if (!confirm("¿Eliminar esta temporada y todos sus episodios?")) return;
+
+  try {
+    const r = await fetch(API_TEMPORADAS + "/" + id, {
+      method: "DELETE"
+    });
+
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    if (Number(temporadaSeleccionadaId) === Number(id)) {
+      temporadaSeleccionadaId = null;
+      document.getElementById("panelEpisodios").style.display = "none";
+    }
+
+    await cargarTemporadas();
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo eliminar la temporada.");
+  }
+}
+
+async function seleccionarTemporada(id, titulo) {
+  temporadaSeleccionadaId = Number(id);
+  editandoEpisodioId = null;
+
+  document.getElementById("panelEpisodios").style.display = "block";
+  document.getElementById("tituloTemporadaSeleccionada").textContent =
+    "Episodios — " + titulo;
+
+  document.getElementById("formEpisodio").style.display = "none";
+
+  await cargarEpisodios();
+}
+
+async function cargarEpisodios() {
+  if (!temporadaSeleccionadaId) return;
+
+  try {
+    const r = await fetch(
+      API_EPISODIOS + "?temporadaId=" + encodeURIComponent(temporadaSeleccionadaId)
+    );
+
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    const data = await r.json();
+    const episodios = Array.isArray(data) ? data : (data.episodios || []);
+
+    renderEpisodios(episodios);
+  } catch (e) {
+    console.error(e);
+    document.getElementById("listaEpisodios").innerHTML =
+      '<div class="empty-state">No se pudieron cargar los episodios.</div>';
+  }
+}
+
+function renderEpisodios(episodios) {
+  const cont = document.getElementById("listaEpisodios");
+
+  if (!episodios.length) {
+    cont.innerHTML =
+      '<div class="empty-state">Esta temporada todavía no tiene episodios.</div>';
+    return;
+  }
+
+  cont.innerHTML = episodios.map(e => `
+    <div class="content-row">
+      <div>
+        <strong>Episodio ${esc(e.numero)} — ${esc(e.titulo)}</strong>
+        ${e.duracion ? `<div>Duración: ${esc(e.duracion)}</div>` : ""}
+        ${e.descripcion ? `<small>${esc(e.descripcion)}</small>` : ""}
+        <div>
+          <small>${Number(e.publicado) ? "PUBLICADO" : "NO PUBLICADO"}</small>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-secondary" onclick="editarEpisodio(${Number(e.id)})">
+          EDITAR
+        </button>
+        <button class="btn-danger" onclick="eliminarEpisodio(${Number(e.id)})">
+          ELIMINAR
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function mostrarFormularioEpisodio() {
+  if (!temporadaSeleccionadaId) {
+    alert("Primero selecciona una temporada.");
+    return;
+  }
+
+  editandoEpisodioId = null;
+
+  document.getElementById("tituloFormEpisodio").textContent =
+    "Nuevo episodio";
+
+  document.getElementById("episodioNumero").value = 1;
+  document.getElementById("episodioTitulo").value = "";
+  document.getElementById("episodioDuracion").value = "";
+  document.getElementById("episodioThumbnailUrl").value = "";
+  document.getElementById("episodioDescripcion").value = "";
+  document.getElementById("episodioVideoUrl").value = "";
+  document.getElementById("episodioPublicado").checked = false;
+
+  document.getElementById("formEpisodio").style.display = "block";
+}
+
+function cancelarEpisodio() {
+  editandoEpisodioId = null;
+  document.getElementById("formEpisodio").style.display = "none";
+}
+
+async function guardarEpisodio() {
+  if (!temporadaSeleccionadaId) return;
+
+  const numero = Number(document.getElementById("episodioNumero").value);
+  const titulo = document.getElementById("episodioTitulo").value.trim();
+  const duracion = document.getElementById("episodioDuracion").value.trim();
+  const thumbnailUrl = document.getElementById("episodioThumbnailUrl").value.trim();
+  const descripcion = document.getElementById("episodioDescripcion").value.trim();
+  const videoUrl = document.getElementById("episodioVideoUrl").value.trim();
+  const publicado = document.getElementById("episodioPublicado").checked ? 1 : 0;
+
+  if (!numero || numero < 1) {
+    alert("El número de episodio es obligatorio.");
+    return;
+  }
+
+  if (!titulo) {
+    alert("El título del episodio es obligatorio.");
+    return;
+  }
+
+  const payload = {
+    temporadaId: temporadaSeleccionadaId,
+    numero,
+    titulo,
+    descripcion,
+    duracion,
+    thumbnailUrl,
+    videoUrl,
+    publicado
+  };
+
+  try {
+    const url = editandoEpisodioId
+      ? API_EPISODIOS + "/" + editandoEpisodioId
+      : API_EPISODIOS;
+
+    const method = editandoEpisodioId ? "PUT" : "POST";
+
+    const r = await fetch(url, {
+      method,
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const txt = await r.text();
+      throw new Error(txt || "HTTP " + r.status);
+    }
+
+    alert(editandoEpisodioId
+      ? "Episodio actualizado correctamente."
+      : "Episodio creado correctamente.");
+
+    cancelarEpisodio();
+    await cargarEpisodios();
+  } catch (e) {
+    console.error(e);
+    alert("Error al guardar el episodio.");
+  }
+}
+
+async function editarEpisodio(id) {
+  try {
+    const r = await fetch(API_EPISODIOS + "/" + id);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    const e = await r.json();
+
+    editandoEpisodioId = Number(id);
+
+    document.getElementById("tituloFormEpisodio").textContent =
+      "Editar episodio";
+
+    document.getElementById("episodioNumero").value = e.numero || 1;
+    document.getElementById("episodioTitulo").value = e.titulo || "";
+    document.getElementById("episodioDuracion").value = e.duracion || "";
+    document.getElementById("episodioThumbnailUrl").value = e.thumbnailUrl || "";
+    document.getElementById("episodioDescripcion").value = e.descripcion || "";
+    document.getElementById("episodioVideoUrl").value = e.videoUrl || "";
+    document.getElementById("episodioPublicado").checked = Number(e.publicado) === 1;
+
+    document.getElementById("formEpisodio").style.display = "block";
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo cargar el episodio.");
+  }
+}
+
+async function eliminarEpisodio(id) {
+  if (!confirm("¿Eliminar este episodio?")) return;
+
+  try {
+    const r = await fetch(API_EPISODIOS + "/" + id, {
+      method: "DELETE"
+    });
+
+    if (!r.ok) throw new Error("HTTP " + r.status);
+
+    await cargarEpisodios();
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo eliminar el episodio.");
+  }
+}
+
 </script>
 </body>
 </html>

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
@@ -24,7 +25,16 @@ fun CineviloPlayer(
 
     val player = remember(videoUrl) {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(videoUrl)))
+            val mediaItem = MediaItem.Builder()
+                .setUri(Uri.parse(videoUrl))
+                .apply {
+                    if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
+                        setMimeType(MimeTypes.APPLICATION_M3U8)
+                    }
+                }
+                .build()
+
+            setMediaItem(mediaItem)
             prepare()
             playWhenReady = false
         }
@@ -51,6 +61,9 @@ fun CineviloPlayer(
                     controllerShowTimeoutMs = 3000
                     controllerAutoShow = true
                 }
+            },
+            update = { view ->
+                view.player = player
             }
         )
     }
