@@ -466,7 +466,11 @@ fun CineviloApp() {
                         buscarActivo = configuracion.buscarActivo,
                         miListaActivo = configuracion.miListaActivo,
                         perfilActivo = configuracion.perfilActivo,
-                        enVivoActivo = configuracion.enVivoActivo
+                        enVivoActivo = configuracion.enVivoActivo,
+                        peliculasActivo = configuracion.peliculasActivo,
+                        seriesActivo = configuracion.seriesActivo,
+                        estrenosActivo = configuracion.estrenosActivo,
+                        originalsActivo = configuracion.originalsActivo
                     )
                 }
             }
@@ -627,7 +631,11 @@ fun CineviloHome(
     buscarActivo: Boolean = true,
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
-    enVivoActivo: Boolean = true
+    enVivoActivo: Boolean = true,
+    peliculasActivo: Boolean = true,
+    seriesActivo: Boolean = true,
+    estrenosActivo: Boolean = true,
+    originalsActivo: Boolean = true
 ) {
 
     val destacados =
@@ -642,6 +650,12 @@ fun CineviloHome(
         contenidos.filter {
             it.tipo.equals("serie", true)
         }
+
+    val estrenos =
+        contenidos.filter { it.estreno }
+
+    val originals =
+        contenidos.filter { it.esOriginal }
 
     val principal =
         destacados.firstOrNull()
@@ -711,6 +725,22 @@ fun CineviloHome(
                 CineviloSection(
                     titulo = "Series",
                     contenidos = series,
+                    onSeleccionar = onSeleccionar
+                )
+            }
+
+            if (estrenosActivo && estrenos.isNotEmpty()) {
+                CineviloSection(
+                    titulo = "Estrenos",
+                    contenidos = estrenos,
+                    onSeleccionar = onSeleccionar
+                )
+            }
+
+            if (originalsActivo && originals.isNotEmpty()) {
+                CineviloSection(
+                    titulo = "CINEVILO ORIGINALS",
+                    contenidos = originals,
                     onSeleccionar = onSeleccionar
                 )
             }
