@@ -233,6 +233,7 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
     <div class="card"><strong>Originals</strong><div id="statOriginals" style="font-size:30px;margin-top:10px">—</div></div>
     <div class="card"><strong>Destacados</strong><div id="statDestacados" style="font-size:30px;margin-top:10px">—</div></div>
     <div class="card"><strong>Canales en transmisión</strong><div id="statEnVivo" style="font-size:30px;margin-top:10px">—</div></div>
+    <div class="card"><strong>Usuarios registrados</strong><div id="statUsuarios" style="font-size:30px;margin-top:10px">—</div></div>
   </div>
 </div>
 </section>
@@ -423,12 +424,20 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 </section>
 
 <section id="originals" class="hidden">
-<h1>CINEVILO ORIGINALS</h1>
-<div class="card">
-  <h2>Producciones originales</h2>
-  <p style="color:#888">Esta sección mostrará automáticamente el contenido marcado como CINEVILO ORIGINAL.</p>
-  <div id="listaOriginals" style="margin-top:20px"></div>
-</div>
+  <div class="section-header">
+    <div>
+      <h1>CINEVILO ORIGINALS</h1>
+      <p>Películas producidas por la marca CINEVILO, ordenadas de la más reciente a la más antigua.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⭐ Nuestras películas</h2>
+    <p style="color:#888">
+      Aquí aparecen exclusivamente las películas marcadas como CINEVILO ORIGINAL.
+    </p>
+    <div id="listaOriginals" style="margin-top:20px"></div>
+  </div>
 </section>
 
 
@@ -885,7 +894,7 @@ function mostrarEstadoContenido(texto,error=false){
   e.style.borderRadius="7px";
 }
 
-function actualizarDashboard(){
+async function actualizarDashboard(){
   const peliculas=contenidos.filter(x=>{
     const t=tipoNormalizado(x);
     return t==="pelicula" || t==="película";
@@ -900,13 +909,33 @@ function actualizarDashboard(){
     statPeliculas:peliculas,
     statSeries:series,
     statOriginals:originals,
-    statDestacados:destacados
+    statDestacados:destacados,
+    statUsuarios:"—"
   };
 
   Object.entries(asignaciones).forEach(([id,valor])=>{
     const e=document.getElementById(id);
     if(e) e.textContent=valor;
   });
+
+  const vivo=document.getElementById("statEnVivo");
+
+  if(vivo){
+    try{
+      const respuesta=await fetch(API);
+      if(!respuesta.ok) throw new Error("No se pudo consultar En Vivo");
+
+      const canales=await respuesta.json();
+      const lista=Array.isArray(canales) ? canales : [];
+
+      vivo.textContent=lista.filter(x =>
+        Number(x.activo) === 1 || x.activo === true
+      ).length;
+
+    }catch(e){
+      vivo.textContent="—";
+    }
+  }
 }
 
 
@@ -968,9 +997,54 @@ function renderEspeciales(){
   const destacados=document.getElementById("listaDestacados");
 
   if(originals){
-    originals.innerHTML=contenidos.filter(esOriginal).length
-      ? contenidos.filter(esOriginal).map(x=>`<div style="padding:12px;border-bottom:1px solid #333">${escAdmin(valorContenido(x,"titulo","Sin título"))}</div>`).join("")
-      : '<div style="color:#777">No hay CINEVILO ORIGINALS.</div>';
+    const listaOriginals = contenidos
+      .filter(x => esOriginal(x) && tipoNormalizado(x) === "pelicula")
+      .sort((a,b)=>{
+        const anioA = Number(valorContenido(a,"anio",0)) || 0;
+        const anioB = Number(valorContenido(b,"anio",0)) || 0;
+
+        if(anioB !== anioA){
+          return anioB - anioA;
+        }
+
+        return String(valorContenido(b,"creadoEn","")).localeCompare(
+          String(valorContenido(a,"creadoEn",""))
+        );
+      });
+
+    originals.innerHTML = listaOriginals.length
+      ? listaOriginals.map((x,i)=>`
+          <div style="display:flex;align-items:center;gap:15px;padding:16px;border-bottom:1px solid #333">
+            <div style="min-width:40px;font-size:20px;font-weight:bold;color:#2563ff">
+              ${i + 1}
+            </div>
+
+            <div style="width:70px;height:95px;background:#151515;border-radius:6px;overflow:hidden;flex-shrink:0">
+              ${
+                valorContenido(x,"portadaUrl","")
+                  ? `<img src="${escAdmin(valorContenido(x,"portadaUrl",""))}" style="width:100%;height:100%;object-fit:cover">`
+                  : `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#666;font-size:11px">SIN PORTADA</div>`
+              }
+            </div>
+
+            <div style="flex:1">
+              <div style="font-size:18px;font-weight:bold">
+                ${escAdmin(valorContenido(x,"titulo","Sin título"))}
+              </div>
+              <div style="color:#888;font-size:13px;margin-top:6px">
+                Película · ${escAdmin(valorContenido(x,"anio","—"))}
+              </div>
+              <div style="color:#888;font-size:13px;margin-top:4px">
+                ${escAdmin(valorContenido(x,"genero","Sin género"))}
+              </div>
+            </div>
+
+            <button class="save" onclick="editarContenido(${Number(x.id)})">
+              EDITAR
+            </button>
+          </div>
+        `).join("")
+      : '<div style="color:#777;padding:20px 0">Todavía no hay películas CINEVILO ORIGINALS.</div>';
   }
 
   if(destacados){
