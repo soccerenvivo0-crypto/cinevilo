@@ -1,0 +1,20 @@
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Android / Gradle build files
+.gradle/
+.kotlin/
+build/
+app/build/
+
+# Local IDE files
+.idea/
+*.iml
+
+# Backups locales de ADMIN
+admin/*.backup
+admin/*.pre-*

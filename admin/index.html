@@ -629,18 +629,254 @@ button.save{margin-top:20px;padding:13px 25px;background:#2563ff;color:white;bor
 
 <section id="estadisticas" class="hidden">
 <h1>Estadísticas</h1>
+
 <div class="card">
-  <h2>Estadísticas de CINEVILO</h2>
-  <p style="color:#888">Aquí veremos reproducciones, usuarios, contenido más visto, tiempo de reproducción y estadísticas de EN VIVO.</p>
+  <h2>📊 Resumen de CINEVILO</h2>
+  <p style="color:#888">Las estadísticas comenzarán a mostrar datos cuando CINEVILO empiece a registrar interacciones reales.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-top:20px">
+    <div class="card">
+      <strong>▶️ Reproducciones iniciadas</strong>
+      <div id="statReproducciones" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>✅ Reproducciones completadas</strong>
+      <div id="statCompletadas" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>⏱️ Tiempo de reproducción</strong>
+      <div id="statTiempo" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>❤️ Me gusta</strong>
+      <div id="statLikes" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>➕ Mi lista</strong>
+      <div id="statMiLista" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>⭐ Valoraciones</strong>
+      <div id="statValoraciones" style="font-size:30px;margin-top:10px">—</div>
+    </div>
+  </div>
 </div>
+
+<div class="card" style="margin-top:25px">
+  <h2>🎬 Rendimiento del contenido</h2>
+  <p style="color:#888">Aquí aparecerán las películas y series con mayor actividad cuando existan datos reales.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-top:20px">
+    <div class="card">
+      <strong>Más reproducido</strong>
+      <div style="font-size:18px;margin-top:15px;color:#777">Sin datos todavía</div>
+    </div>
+
+    <div class="card">
+      <strong>Más completado</strong>
+      <div style="font-size:18px;margin-top:15px;color:#777">Sin datos todavía</div>
+    </div>
+
+    <div class="card">
+      <strong>Más agregado a Mi lista</strong>
+      <div style="font-size:18px;margin-top:15px;color:#777">Sin datos todavía</div>
+    </div>
+
+    <div class="card">
+      <strong>Mejor valorado</strong>
+      <div style="font-size:18px;margin-top:15px;color:#777">Sin datos todavía</div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>📡 EN VIVO</h2>
+  <p style="color:#888">Estadísticas de visualización de los canales en directo.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-top:20px">
+    <div class="card">
+      <strong>Reproducciones</strong>
+      <div style="font-size:30px;margin-top:10px">—</div>
+    </div>
+
+    <div class="card">
+      <strong>Canal más visto</strong>
+      <div style="font-size:18px;margin-top:15px;color:#777">Sin datos todavía</div>
+    </div>
+
+    <div class="card">
+      <strong>Tiempo de visualización</strong>
+      <div style="font-size:30px;margin-top:10px">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>⚡ Eventos registrados</h2>
+  <p style="color:#888">Base preparada para las futuras interacciones de CINEVILO.</p>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">
+    <span class="save" style="background:#333">PLAY</span>
+    <span class="save" style="background:#333">25%</span>
+    <span class="save" style="background:#333">50%</span>
+    <span class="save" style="background:#333">75%</span>
+    <span class="save" style="background:#333">COMPLETADO</span>
+    <span class="save" style="background:#333">ME GUSTA</span>
+    <span class="save" style="background:#333">MI LISTA</span>
+    <span class="save" style="background:#333">VALORACIÓN</span>
+    <span class="save" style="background:#333">COMENTARIO</span>
+  </div>
+</div>
+
 </section>
 
 <section id="configuracion" class="hidden">
 <h1>Configuración</h1>
-<div class="card">
-  <h2>Configuración de CINEVILO</h2>
-  <p style="color:#888">Configuración general del administrador y de la plataforma.</p>
+
+<div class="section-header">
+  <div>
+    <h1 style="margin-bottom:5px">⚙️ Centro de control CINEVILO</h1>
+    <p style="color:#888;margin:0">
+      Configura desde ADMIN los elementos que posteriormente controlarán la experiencia pública de CINEVILO.
+    </p>
+  </div>
 </div>
+
+<div class="card">
+  <h2>🏠 Experiencia de la aplicación</h2>
+  <p style="color:#888">Secciones principales disponibles para el público.</p>
+
+  <div style="margin-top:20px">
+    <label>
+      <input id="cfg_home" type="checkbox" checked style="width:auto">
+      🏠 Home
+    </label>
+
+    <label>
+      <input id="cfg_buscar" type="checkbox" checked style="width:auto">
+      🔍 Buscar
+    </label>
+
+    <label>
+      <input id="cfg_mi_lista" type="checkbox" checked style="width:auto">
+      ➕ Mi lista
+    </label>
+
+    <label>
+      <input id="cfg_perfil" type="checkbox" checked style="width:auto">
+      👤 Perfil
+    </label>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>🎬 Contenido</h2>
+  <p style="color:#888">Control de las principales categorías y secciones del catálogo.</p>
+
+  <div style="margin-top:20px">
+    <label>
+      <input id="cfg_peliculas" type="checkbox" checked style="width:auto">
+      🎥 Películas
+    </label>
+
+    <label>
+      <input id="cfg_series" type="checkbox" checked style="width:auto">
+      📺 Series
+    </label>
+
+    <label>
+      <input id="cfg_estrenos" type="checkbox" checked style="width:auto">
+      ⭐ Estrenos
+    </label>
+
+    <label>
+      <input id="cfg_originals" type="checkbox" checked style="width:auto">
+      ⭐ CINEVILO ORIGINALS
+    </label>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>📡 EN VIVO</h2>
+  <p style="color:#888">Control general de la sección de transmisiones en vivo.</p>
+
+  <div style="margin-top:20px">
+    <label>
+      <input id="cfg_en_vivo" type="checkbox" checked style="width:auto">
+      Mostrar EN VIVO en la aplicación
+    </label>
+
+    <label>
+      <input id="cfg_en_vivo_canales" type="checkbox" checked style="width:auto">
+      Permitir canales disponibles
+    </label>
+  </div>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>▶️ Reproducción</h2>
+  <p style="color:#888">Configuraciones generales del reproductor CINEVILO.</p>
+
+  <div style="margin-top:20px">
+    <label>
+      <input id="cfg_reproductor" type="checkbox" checked style="width:auto">
+      Usar reproductor CINEVILO
+    </label>
+
+    <label>
+      <input id="cfg_autoplay" type="checkbox" checked style="width:auto">
+      Reproducción automática
+    </label>
+  </div>
+
+<div style="margin-top:30px;display:flex;align-items:center;gap:15px;flex-wrap:wrap">
+  <button onclick="guardarConfiguracion()" style="padding:12px 22px;font-weight:bold">
+    💾 GUARDAR CONFIGURACIÓN
+  </button>
+  <span id="cfg_estado" style="color:#888"></span>
+</div>
+
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>📢 Comunicación</h2>
+  <p style="color:#888">Mensajes que posteriormente podrán mostrarse al público.</p>
+
+  <label>Mensaje destacado</label>
+  <input id="cfg_mensaje_texto" placeholder="Ejemplo: Nuevo estreno disponible en CINEVILO">
+
+  <label>Estado del mensaje</label>
+  <select id="cfg_mensaje_activo">
+    <option value="0">DESACTIVADO</option>
+    <option value="1">ACTIVO</option>
+  </select>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>🔧 Estado de la plataforma</h2>
+  <p style="color:#888">Estado general que posteriormente podrá controlar el acceso público.</p>
+
+  <label>Estado</label>
+  <select>
+    <option>ACTIVA</option>
+    <option>MANTENIMIENTO</option>
+  </select>
+</div>
+
+<div class="card" style="margin-top:25px">
+  <h2>💡 Importante</h2>
+  <p style="color:#888">
+    Estas opciones representan la configuración futura de la aplicación.
+    Se conectarán al backend para que los cambios realizados desde ADMIN
+    puedan reflejarse realmente en CINEVILO sin modificar el código Android.
+  </p>
+</div>
+
 </section>
 
 </main>
@@ -1906,5 +2142,118 @@ async function eliminarEpisodio(id) {
 }
 
 </script>
+
+<script>
+const API_CONFIGURACION = "https://cinevilo-api.soccerenvivo0.workers.dev/api/configuracion";
+
+const CONFIG_MAP = {
+  home_activo: "cfg_home",
+  buscar_activo: "cfg_buscar",
+  mi_lista_activo: "cfg_mi_lista",
+  perfil_activo: "cfg_perfil",
+  peliculas_activo: "cfg_peliculas",
+  series_activo: "cfg_series",
+  estrenos_activo: "cfg_estrenos",
+  originals_activo: "cfg_originals",
+  en_vivo_activo: "cfg_en_vivo",
+  en_vivo_canales_activo: "cfg_en_vivo_canales",
+  reproductor_cinevilo_activo: "cfg_reproductor",
+  autoplay_activo: "cfg_autoplay"
+};
+
+async function cargarConfiguracion() {
+  try {
+    const respuesta = await fetch(API_CONFIGURACION);
+
+    if (!respuesta.ok) {
+      throw new Error("No se pudo cargar la configuración");
+    }
+
+    const datos = await respuesta.json();
+
+    datos.forEach(item => {
+      const id = CONFIG_MAP[item.clave];
+
+      if (id) {
+        const control = document.getElementById(id);
+        if (control) {
+          control.checked = String(item.valor) === "1";
+        }
+      }
+
+      if (item.clave === "mensaje_texto") {
+        const campo = document.getElementById("cfg_mensaje_texto");
+        if (campo) campo.value = item.valor || "";
+      }
+
+      if (item.clave === "mensaje_activo") {
+        const campo = document.getElementById("cfg_mensaje_activo");
+        if (campo) campo.value = String(item.valor);
+      }
+    });
+
+  } catch (error) {
+    console.error("Error cargando configuración:", error);
+  }
+}
+
+async function guardarConfiguracion() {
+  const estado = document.getElementById("cfg_estado");
+
+  const datos = {};
+
+  Object.entries(CONFIG_MAP).forEach(([clave, id]) => {
+    const control = document.getElementById(id);
+    if (control) {
+      datos[clave] = control.checked ? "1" : "0";
+    }
+  });
+
+  const mensaje = document.getElementById("cfg_mensaje_texto");
+  const mensajeActivo = document.getElementById("cfg_mensaje_activo");
+
+  datos.mensaje_texto = mensaje ? mensaje.value : "";
+  datos.mensaje_activo = mensajeActivo ? mensajeActivo.value : "0";
+
+  try {
+    if (estado) {
+      estado.textContent = "Guardando...";
+      estado.style.color = "#aaa";
+    }
+
+    const respuesta = await fetch(API_CONFIGURACION, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(datos)
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok || !resultado.ok) {
+      throw new Error(resultado.error || "No se pudo guardar");
+    }
+
+    if (estado) {
+      estado.textContent = "✓ Configuración guardada";
+      estado.style.color = "#7CFF9B";
+    }
+
+  } catch (error) {
+    console.error("Error guardando configuración:", error);
+
+    if (estado) {
+      estado.textContent = "✕ Error al guardar";
+      estado.style.color = "#ff8b8b";
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  cargarConfiguracion();
+});
+</script>
+
 </body>
 </html>
