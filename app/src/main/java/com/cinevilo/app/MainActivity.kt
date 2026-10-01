@@ -66,6 +66,81 @@ private const val API_URL =
 private const val ENVIVO_API_URL =
     "https://cinevilo-api.soccerenvivo0.workers.dev/api/en-vivo"
 
+private const val CONFIG_API_URL =
+    "https://cinevilo-api.soccerenvivo0.workers.dev/api/configuracion"
+
+data class ConfiguracionCinevilo(
+    val homeActivo: Boolean = true,
+    val buscarActivo: Boolean = true,
+    val miListaActivo: Boolean = true,
+    val perfilActivo: Boolean = true,
+    val peliculasActivo: Boolean = true,
+    val seriesActivo: Boolean = true,
+    val estrenosActivo: Boolean = true,
+    val originalsActivo: Boolean = true,
+    val enVivoActivo: Boolean = true,
+    val enVivoCanalesActivo: Boolean = true,
+    val reproductorCineviloActivo: Boolean = true,
+    val autoplayActivo: Boolean = true,
+    val mantenimientoActivo: Boolean = false,
+    val mensajeActivo: Boolean = false,
+    val mensajeTexto: String = ""
+)
+
+suspend fun cargarConfiguracionDesdeApi(): ConfiguracionCinevilo =
+    withContext(Dispatchers.IO) {
+
+        val url = URL(CONFIG_API_URL)
+        val conexion = url.openConnection() as HttpURLConnection
+
+        try {
+            conexion.requestMethod = "GET"
+            conexion.connectTimeout = 10000
+            conexion.readTimeout = 10000
+
+            val respuesta =
+                conexion.inputStream.bufferedReader().use { it.readText() }
+
+            val json = JSONArray(respuesta)
+
+            val valores = mutableMapOf<String, String>()
+
+            for (i in 0 until json.length()) {
+                val item = json.getJSONObject(i)
+                valores[item.optString("clave")] = item.optString("valor")
+            }
+
+            fun activo(clave: String, defecto: Boolean = true): Boolean {
+                return when (val valor = valores[clave]) {
+                    "1" -> true
+                    "0" -> false
+                    else -> defecto
+                }
+            }
+
+            ConfiguracionCinevilo(
+                homeActivo = activo("home_activo"),
+                buscarActivo = activo("buscar_activo"),
+                miListaActivo = activo("mi_lista_activo"),
+                perfilActivo = activo("perfil_activo"),
+                peliculasActivo = activo("peliculas_activo"),
+                seriesActivo = activo("series_activo"),
+                estrenosActivo = activo("estrenos_activo"),
+                originalsActivo = activo("originals_activo"),
+                enVivoActivo = activo("en_vivo_activo"),
+                enVivoCanalesActivo = activo("en_vivo_canales_activo"),
+                reproductorCineviloActivo = activo("reproductor_cinevilo_activo"),
+                autoplayActivo = activo("autoplay_activo"),
+                mantenimientoActivo = activo("mantenimiento_activo", false),
+                mensajeActivo = activo("mensaje_activo", false),
+                mensajeTexto = valores["mensaje_texto"].orEmpty()
+            )
+
+        } finally {
+            conexion.disconnect()
+        }
+    }
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,6 +266,10 @@ fun CineviloApp() {
         mutableStateOf(true)
     }
 
+    var configuracion by remember {
+        mutableStateOf(ConfiguracionCinevilo())
+    }
+
     var pantalla by remember {
         mutableStateOf("inicio")
     }
@@ -219,6 +298,12 @@ fun CineviloApp() {
 
         try {
             contenidos = cargarContenidoDesdeApi()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        try {
+            configuracion = cargarConfiguracionDesdeApi()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -286,11 +371,16 @@ fun CineviloApp() {
                         },
                         onNavigate = {
                             pantalla = it
-                        }
+                        },
+                        homeActivo = configuracion.homeActivo,
+                        buscarActivo = configuracion.buscarActivo,
+                        miListaActivo = configuracion.miListaActivo,
+                        perfilActivo = configuracion.perfilActivo,
+                        enVivoActivo = configuracion.enVivoActivo
                     )
                 }
 
-                pantalla == "envivo" -> {
+                pantalla == "envivo" && configuracion.enVivoActivo -> {
 
                     LaunchedEffect(Unit) {
                         cargandoEnVivo = true
@@ -320,6 +410,7 @@ fun CineviloApp() {
                         canales = canalesEnVivo,
                         canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
+                        enVivoCanalesActivo = configuracion.enVivoCanalesActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -338,7 +429,12 @@ fun CineviloApp() {
                         },
                         onNavigate = {
                             pantalla = it
-                        }
+                        },
+                        homeActivo = configuracion.homeActivo,
+                        buscarActivo = configuracion.buscarActivo,
+                        miListaActivo = configuracion.miListaActivo,
+                        perfilActivo = configuracion.perfilActivo,
+                        enVivoActivo = configuracion.enVivoActivo
                     )
                 }
 
@@ -347,7 +443,12 @@ fun CineviloApp() {
                     CineviloPerfil(
                         onNavigate = {
                             pantalla = it
-                        }
+                        },
+                        homeActivo = configuracion.homeActivo,
+                        buscarActivo = configuracion.buscarActivo,
+                        miListaActivo = configuracion.miListaActivo,
+                        perfilActivo = configuracion.perfilActivo,
+                        enVivoActivo = configuracion.enVivoActivo
                     )
                 }
 
@@ -360,7 +461,12 @@ fun CineviloApp() {
                         },
                         onNavigate = {
                             pantalla = it
-                        }
+                        },
+                        homeActivo = configuracion.homeActivo,
+                        buscarActivo = configuracion.buscarActivo,
+                        miListaActivo = configuracion.miListaActivo,
+                        perfilActivo = configuracion.perfilActivo,
+                        enVivoActivo = configuracion.enVivoActivo
                     )
                 }
             }
@@ -373,6 +479,7 @@ fun EnVivoScreen(
     canales: List<EnVivoItem>,
     canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
+    enVivoCanalesActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -439,52 +546,55 @@ fun EnVivoScreen(
                         modifier = Modifier.height(16.dp)
                     )
 
-                    Text(
-                        text = "CANALES",
-                        color = CineviloGray,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (enVivoCanalesActivo) {
 
-                    Spacer(
-                        modifier = Modifier.height(10.dp)
-                    )
+                        Text(
+                            text = "CANALES",
+                            color = CineviloGray,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    val canalesAdicionales =
-                        canales.filter {
-                            !it.modo.equals("rtmp", true)
-                        }
+                        Spacer(
+                            modifier = Modifier.height(10.dp)
+                        )
 
-                    canalesAdicionales.forEach { canal ->
+                        val canalesAdicionales =
+                            canales.filter {
+                                !it.modo.equals("rtmp", true)
+                            }
 
-                        val seleccionado =
-                            canal.id == canalSeleccionado.id
+                        canalesAdicionales.forEach { canal ->
 
-                        Button(
-                            onClick = {
-                                onSeleccionarCanal(canal)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor =
-                                    if (seleccionado) {
-                                        CineviloBlue
-                                    } else {
-                                        CineviloDark
-                                    },
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(
-                                text = canal.titulo,
+                            val seleccionado =
+                                canal.id == canalSeleccionado.id
+
+                            Button(
+                                onClick = {
+                                    onSeleccionarCanal(canal)
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                fontWeight = FontWeight.Bold
-                            )
+                                    .padding(bottom = 10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor =
+                                        if (seleccionado) {
+                                            CineviloBlue
+                                        } else {
+                                            CineviloDark
+                                        },
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = canal.titulo,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -512,7 +622,12 @@ fun EnVivoScreen(
 fun CineviloHome(
     contenidos: List<Contenido>,
     onSeleccionar: (Contenido) -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    homeActivo: Boolean = true,
+    buscarActivo: Boolean = true,
+    miListaActivo: Boolean = true,
+    perfilActivo: Boolean = true,
+    enVivoActivo: Boolean = true
 ) {
 
     val destacados =
@@ -582,7 +697,7 @@ fun CineviloHome(
                 modifier = Modifier.height(24.dp)
             )
 
-            if (peliculas.isNotEmpty()) {
+            if (peliculasActivo && peliculas.isNotEmpty()) {
 
                 CineviloSection(
                     titulo = "Películas",
@@ -591,7 +706,7 @@ fun CineviloHome(
                 )
             }
 
-            if (series.isNotEmpty()) {
+            if (seriesActivo && series.isNotEmpty()) {
 
                 CineviloSection(
                     titulo = "Series",
@@ -624,7 +739,12 @@ fun CineviloHome(
 
         CineviloBottomBar(
             actual = "inicio",
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
+            homeActivo = homeActivo,
+            buscarActivo = buscarActivo,
+            miListaActivo = miListaActivo,
+            perfilActivo = perfilActivo,
+            enVivoActivo = enVivoActivo
         )
     }
 }
@@ -788,7 +908,12 @@ fun CineviloCard(
 fun CineviloBuscar(
     contenidos: List<Contenido>,
     onSeleccionar: (Contenido) -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    homeActivo: Boolean = true,
+    buscarActivo: Boolean = true,
+    miListaActivo: Boolean = true,
+    perfilActivo: Boolean = true,
+    enVivoActivo: Boolean = true
 ) {
 
     var texto by remember {
@@ -910,7 +1035,12 @@ fun CineviloBuscar(
 
         CineviloBottomBar(
             actual = "buscar",
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
+            homeActivo = homeActivo,
+            buscarActivo = buscarActivo,
+            miListaActivo = miListaActivo,
+            perfilActivo = perfilActivo,
+            enVivoActivo = enVivoActivo
         )
     }
 }
@@ -919,7 +1049,12 @@ fun CineviloBuscar(
 fun CineviloMiLista(
     contenidos: List<Contenido>,
     onSeleccionar: (Contenido) -> Unit,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    homeActivo: Boolean = true,
+    buscarActivo: Boolean = true,
+    miListaActivo: Boolean = true,
+    perfilActivo: Boolean = true,
+    enVivoActivo: Boolean = true
 ) {
 
     Column(
@@ -1001,14 +1136,24 @@ fun CineviloMiLista(
 
         CineviloBottomBar(
             actual = "lista",
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
+            homeActivo = homeActivo,
+            buscarActivo = buscarActivo,
+            miListaActivo = miListaActivo,
+            perfilActivo = perfilActivo,
+            enVivoActivo = enVivoActivo
         )
     }
 }
 
 @Composable
 fun CineviloPerfil(
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    homeActivo: Boolean = true,
+    buscarActivo: Boolean = true,
+    miListaActivo: Boolean = true,
+    perfilActivo: Boolean = true,
+    enVivoActivo: Boolean = true
 ) {
 
     Column(
@@ -1074,7 +1219,12 @@ fun CineviloPerfil(
 
         CineviloBottomBar(
             actual = "perfil",
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
+            homeActivo = homeActivo,
+            buscarActivo = buscarActivo,
+            miListaActivo = miListaActivo,
+            perfilActivo = perfilActivo,
+            enVivoActivo = enVivoActivo
         )
     }
 }
@@ -1239,7 +1389,12 @@ fun CineviloDetalle(
 @Composable
 fun CineviloBottomBar(
     actual: String,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    homeActivo: Boolean = true,
+    buscarActivo: Boolean = true,
+    miListaActivo: Boolean = true,
+    perfilActivo: Boolean = true,
+    enVivoActivo: Boolean = true
 ) {
 
     Row(
@@ -1255,40 +1410,50 @@ fun CineviloBottomBar(
             Arrangement.SpaceEvenly
     ) {
 
-        CineviloNavItem(
-            texto = "Inicio",
-            id = "inicio",
-            actual = actual,
-            onClick = onNavigate
-        )
+        if (homeActivo) {
+            CineviloNavItem(
+                texto = "Inicio",
+                id = "inicio",
+                actual = actual,
+                onClick = onNavigate
+            )
+        }
 
-        CineviloNavItem(
-            texto = "Buscar",
-            id = "buscar",
-            actual = actual,
-            onClick = onNavigate
-        )
+        if (buscarActivo) {
+            CineviloNavItem(
+                texto = "Buscar",
+                id = "buscar",
+                actual = actual,
+                onClick = onNavigate
+            )
+        }
 
-        CineviloNavItem(
-            texto = "EN VIVO",
-            id = "envivo",
-            actual = actual,
-            onClick = onNavigate
-        )
+        if (enVivoActivo) {
+            CineviloNavItem(
+                texto = "EN VIVO",
+                id = "envivo",
+                actual = actual,
+                onClick = onNavigate
+            )
+        }
 
-        CineviloNavItem(
-            texto = "Mi lista",
-            id = "lista",
-            actual = actual,
-            onClick = onNavigate
-        )
+        if (miListaActivo) {
+            CineviloNavItem(
+                texto = "Mi lista",
+                id = "lista",
+                actual = actual,
+                onClick = onNavigate
+            )
+        }
 
-        CineviloNavItem(
-            texto = "Perfil",
-            id = "perfil",
-            actual = actual,
-            onClick = onNavigate
-        )
+        if (perfilActivo) {
+            CineviloNavItem(
+                texto = "Perfil",
+                id = "perfil",
+                actual = actual,
+                onClick = onNavigate
+            )
+        }
     }
 }
 
