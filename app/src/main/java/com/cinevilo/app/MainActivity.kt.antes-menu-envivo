@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -386,20 +385,11 @@ fun CineviloApp() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
 
-                                androidx.compose.foundation.Canvas(
-        modifier = Modifier.size(24.dp)
-    ) {
-        val triangle = androidx.compose.ui.graphics.Path().apply {
-            moveTo(size.width * 0.18f, size.height * 0.08f)
-            lineTo(size.width * 0.96f, size.height * 0.50f)
-            lineTo(size.width * 0.18f, size.height * 0.92f)
-            close()
-        }
-        drawPath(
-            path = triangle,
-            color = Color.White
-        )
-    }
+                                Text(
+                                    text = "▶",
+                                    color = Color.White,
+                                    fontSize = 15.sp
+                                )
 
                                 Spacer(
                                     modifier = Modifier.width(10.dp)
@@ -483,11 +473,6 @@ fun CineviloApp() {
                         canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
                         enVivoCanalesActivo = configuracion.enVivoCanalesActivo,
-                        homeActivo = configuracion.homeActivo,
-                        buscarActivo = configuracion.buscarActivo,
-                        miListaActivo = configuracion.miListaActivo,
-                        perfilActivo = configuracion.perfilActivo,
-                        enVivoActivo = configuracion.enVivoActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -561,11 +546,6 @@ fun EnVivoScreen(
     canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
     enVivoCanalesActivo: Boolean = true,
-    homeActivo: Boolean = true,
-    buscarActivo: Boolean = true,
-    miListaActivo: Boolean = true,
-    perfilActivo: Boolean = true,
-    enVivoActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -574,9 +554,6 @@ fun EnVivoScreen(
             .fillMaxSize()
             .background(CineviloBlack)
     ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
 
         Text(
             text = "CINEVILO EN VIVO",
@@ -704,17 +681,6 @@ fun EnVivoScreen(
                 }
             }
         }
-        }
-
-        CineviloBottomBar(
-            actual = "envivo",
-            onNavigate = onNavigate,
-            homeActivo = homeActivo,
-            buscarActivo = buscarActivo,
-            miListaActivo = miListaActivo,
-            perfilActivo = perfilActivo,
-            enVivoActivo = enVivoActivo
-        )
     }
 }
 
@@ -791,36 +757,11 @@ fun CineviloHome(
                     )
 
                     Text(
-                        text = "VIL",
+                        text = "VILO",
                         color = CineviloBlue,
                         fontSize = 25.sp,
                         fontWeight = FontWeight.Bold
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(
-                                CineviloBlue,
-                                androidx.compose.foundation.shape.CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        androidx.compose.foundation.Canvas(
-                            modifier = Modifier.size(18.dp)
-                        ) {
-                            val triangle = androidx.compose.ui.graphics.Path().apply {
-                                moveTo(size.width * 0.22f, size.height * 0.08f)
-                                lineTo(size.width * 0.98f, size.height * 0.50f)
-                                lineTo(size.width * 0.22f, size.height * 0.92f)
-                                close()
-                            }
-                            drawPath(
-                                path = triangle,
-                                color = Color.White
-                            )
-                        }
-                    }
                 }
 
                 if (perfilActivo) {
@@ -947,7 +888,7 @@ fun CineviloHero(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Color(0xFF071A2B).copy(alpha = 0.72f)
+                    Color.Black.copy(alpha = 0.55f)
                 )
                 .padding(20.dp)
                 .align(Alignment.BottomStart)

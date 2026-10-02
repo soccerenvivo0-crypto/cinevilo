@@ -397,7 +397,7 @@ fun CineviloApp() {
         }
         drawPath(
             path = triangle,
-            color = Color.White
+            color = Color(0xFF071A2B)
         )
     }
 
@@ -817,7 +817,7 @@ fun CineviloHome(
                             }
                             drawPath(
                                 path = triangle,
-                                color = Color.White
+                                color = Color(0xFF071A2B)
                             )
                         }
                     }
@@ -947,7 +947,7 @@ fun CineviloHero(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Color(0xFF071A2B).copy(alpha = 0.72f)
+                    Color.Black.copy(alpha = 0.55f)
                 )
                 .padding(20.dp)
                 .align(Alignment.BottomStart)
