@@ -975,13 +975,14 @@ fun CineviloHero(
             if (contenido.descripcion.isNotBlank()) {
 
                 Spacer(
-                    modifier = Modifier.height(6.dp)
+                    modifier = Modifier.height(8.dp)
                 )
 
                 Text(
                     text = contenido.descripcion,
                     color = Color.LightGray,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
+                    lineHeight = 19.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1082,8 +1083,9 @@ fun CineviloCard(
         Text(
             text = contenido.titulo,
             color = Color.White,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
+            lineHeight = 17.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(
@@ -1202,7 +1204,15 @@ fun CineviloBuscar(
                         Text(
                             text = item.titulo,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 20.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(4.dp)
                         )
 
                         Text(
@@ -1217,7 +1227,8 @@ fun CineviloBuscar(
                                 "Película"
                             },
                             color = CineviloGray,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            lineHeight = 17.sp
                         )
                     }
                 }
