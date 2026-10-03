@@ -90,7 +90,6 @@ data class ConfiguracionCinevilo(
     val originalsActivo: Boolean = true,
     val enVivoActivo: Boolean = true,
     val enVivoCanalesActivo: Boolean = true,
-    val comentariosActivo: Boolean = true,
     val reproductorCineviloActivo: Boolean = true,
     val autoplayActivo: Boolean = true,
     val mantenimientoActivo: Boolean = false,
@@ -140,7 +139,6 @@ suspend fun cargarConfiguracionDesdeApi(): ConfiguracionCinevilo =
                 originalsActivo = activo("originals_activo"),
                 enVivoActivo = activo("en_vivo_activo"),
                 enVivoCanalesActivo = activo("en_vivo_canales_activo"),
-                comentariosActivo = activo("comentarios_activo"),
                 reproductorCineviloActivo = activo("reproductor_cinevilo_activo"),
                 autoplayActivo = activo("autoplay_activo"),
                 mantenimientoActivo = activo("mantenimiento_activo", false),
@@ -400,7 +398,6 @@ fun CineviloApp() {
                         enMiLista = miLista.any {
                             it.id == seleccionado!!.id
                         },
-                        autoplayActivo = configuracion.autoplayActivo,
                         onBack = {
                             seleccionado = null
                         },
@@ -548,13 +545,11 @@ fun CineviloApp() {
                         canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
                         enVivoCanalesActivo = configuracion.enVivoCanalesActivo,
-                        comentariosActivo = configuracion.comentariosActivo,
                         homeActivo = configuracion.homeActivo,
                         buscarActivo = configuracion.buscarActivo,
                         miListaActivo = configuracion.miListaActivo,
                         perfilActivo = configuracion.perfilActivo,
                         enVivoActivo = configuracion.enVivoActivo,
-                        autoplayActivo = configuracion.autoplayActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -632,13 +627,11 @@ fun EnVivoScreen(
     canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
     enVivoCanalesActivo: Boolean = true,
-    comentariosActivo: Boolean = true,
     homeActivo: Boolean = true,
     buscarActivo: Boolean = true,
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
     enVivoActivo: Boolean = true,
-    autoplayActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -682,9 +675,7 @@ fun EnVivoScreen(
 
             canalSeleccionado != null -> {
                 CineviloPlayer(
-                    videoUrl = canalSeleccionado.url,
-                    modoEnVivo = canalSeleccionado.modo.equals("rtmp", ignoreCase = true),
-                    autoplay = autoplayActivo
+                    videoUrl = canalSeleccionado.url
                 )
 
                 Column(
@@ -696,7 +687,7 @@ fun EnVivoScreen(
 
                     Text(
                         text =
-                            if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
+                            if (canalSeleccionado.modo.equals("rtmp", true)) {
                                 "CINEVILO EN VIVO"
                             } else {
                                 canalSeleccionado.titulo
@@ -723,11 +714,6 @@ fun EnVivoScreen(
                             modifier = Modifier.height(10.dp)
                         )
 
-                        val canalPrincipal =
-                            canales.firstOrNull {
-                                it.modo.equals("rtmp", true)
-                            }
-
                         val canalesAdicionales =
                             canales.filter {
                                 !it.modo.equals("rtmp", true)
@@ -739,88 +725,96 @@ fun EnVivoScreen(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            if (canalSeleccionado.modo.equals("rtmp", true)) {
+                            Spacer(
+                                modifier = Modifier.height(22.dp)
+                            )
 
-                            canalPrincipal?.let { principal ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(CineviloDark)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color.White.copy(alpha = 0.08f),
+                                        shape = RoundedCornerShape(16.dp)
+                                    )
+                                    .padding(16.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "💬  COMENTARIOS",
+                                        color = Color.White,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
 
-                                val principalSeleccionado =
-                                    canalSeleccionado.id == principal.id
+                                    Spacer(
+                                        modifier = Modifier.height(12.dp)
+                                    )
 
-                                Box(
-                                    modifier = Modifier
-                                        .width(175.dp)
-                                        .height(92.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(CineviloDark)
-                                        .border(
-                                            width = if (principalSeleccionado) 2.dp else 1.dp,
-                                            color = if (principalSeleccionado) {
-                                                Color.Red
-                                            } else {
-                                                Color(0xFF16A34A)
-                                            },
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                        .clickable {
-                                            onSeleccionarCanal(principal)
-                                        }
-                                        .padding(12.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
+                                    Text(
+                                        text = "Los comentarios estarán disponibles próximamente.",
+                                        color = CineviloGray,
+                                        fontSize = 13.sp
+                                    )
+
+                                    Spacer(
+                                        modifier = Modifier.height(14.dp)
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(
+                                                CineviloBlack.copy(alpha = 0.7f)
+                                            )
+                                            .padding(
+                                                horizontal = 14.dp,
+                                                vertical = 12.dp
+                                            )
                                     ) {
                                         Text(
-                                            text = "CINEVILO EN VIVO",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
-                                        )
-
-                                        Spacer(
-                                            modifier = Modifier.height(6.dp)
-                                        )
-
-                                        Text(
-                                            text = if (principalSeleccionado) {
-                                                "● EN VIVO"
-                                            } else {
-                                                "PRINCIPAL"
-                                            },
-                                            color = if (principalSeleccionado) {
-                                                Color.Red
-                                            } else {
-                                                Color(0xFF16A34A)
-                                            },
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
+                                            text = "Escribe un comentario...",
+                                            color = CineviloGray,
+                                            fontSize = 13.sp
                                         )
                                     }
                                 }
                             }
 
-                            canalesAdicionales.forEach { canal ->
+                            Spacer(
+                                modifier = Modifier.height(22.dp)
+                            )
+                        }
+
+                        canalesAdicionales.forEach { canal ->
 
                                 val seleccionado =
                                     canal.id == canalSeleccionado.id
 
                                 Box(
                                     modifier = Modifier
-                                        .width(165.dp)
-                                        .height(88.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(CineviloDark)
-                                        .border(
-                                            width = if (seleccionado) 2.dp else 1.dp,
-                                            color = if (seleccionado) {
-                                                Color.Red
+                                        .width(150.dp)
+                                        .height(82.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (seleccionado) {
+                                                CineviloBlue
                                             } else {
-                                                Color.White.copy(alpha = 0.10f)
+                                                CineviloDark
+                                            }
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (seleccionado) {
+                                                CineviloBlue
+                                            } else {
+                                                Color.White.copy(alpha = 0.08f)
                                             },
-                                            shape = RoundedCornerShape(16.dp)
+                                            shape = RoundedCornerShape(14.dp)
                                         )
                                         .clickable {
                                             onSeleccionarCanal(canal)
@@ -848,100 +842,9 @@ fun EnVivoScreen(
                                             )
 
                                             Text(
-                                                text = "● EN VIVO",
-                                                color = Color.Red,
+                                                text = "EN VIVO",
+                                                color = Color.White,
                                                 fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
-
-                            Spacer(
-                                modifier = Modifier.height(22.dp)
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(CineviloDark)
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color.White.copy(alpha = 0.08f),
-                                        shape = RoundedCornerShape(16.dp)
-                                    )
-                                    .padding(16.dp)
-                            ) {
-                                Column {
-
-                                    Text(
-                                        text = "💬  COMENTARIOS",
-                                        color = Color.White,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    Spacer(
-                                        modifier = Modifier.height(16.dp)
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "Todavía no hay comentarios.",
-                                            color = CineviloGray,
-                                            fontSize = 13.sp,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-
-                                    Spacer(
-                                        modifier = Modifier.height(16.dp)
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(
-                                                CineviloBlack.copy(alpha = 0.7f)
-                                            )
-                                            .border(
-                                                width = 1.dp,
-                                                color = Color.White.copy(alpha = 0.08f),
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(
-                                                start = 14.dp,
-                                                end = 14.dp
-                                            ),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Escribe un comentario...",
-                                                color = CineviloGray,
-                                                fontSize = 13.sp,
-                                                modifier = Modifier.weight(1f)
-                                            )
-
-                                            Text(
-                                                text = "➤",
-                                                color = CineviloGray,
-                                                fontSize = 18.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -2406,7 +2309,6 @@ fun CineviloPerfil(
 fun CineviloDetalle(
     contenido: Contenido,
     enMiLista: Boolean,
-    autoplayActivo: Boolean = true,
     onBack: () -> Unit,
     onMiLista: () -> Unit
 ) {
@@ -2436,8 +2338,7 @@ fun CineviloDetalle(
         if (contenido.videoUrl.isNotBlank()) {
 
             CineviloPlayer(
-                videoUrl = contenido.videoUrl,
-                autoplay = autoplayActivo
+                videoUrl = contenido.videoUrl
             )
 
             Spacer(

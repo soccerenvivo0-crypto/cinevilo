@@ -90,7 +90,6 @@ data class ConfiguracionCinevilo(
     val originalsActivo: Boolean = true,
     val enVivoActivo: Boolean = true,
     val enVivoCanalesActivo: Boolean = true,
-    val comentariosActivo: Boolean = true,
     val reproductorCineviloActivo: Boolean = true,
     val autoplayActivo: Boolean = true,
     val mantenimientoActivo: Boolean = false,
@@ -140,7 +139,6 @@ suspend fun cargarConfiguracionDesdeApi(): ConfiguracionCinevilo =
                 originalsActivo = activo("originals_activo"),
                 enVivoActivo = activo("en_vivo_activo"),
                 enVivoCanalesActivo = activo("en_vivo_canales_activo"),
-                comentariosActivo = activo("comentarios_activo"),
                 reproductorCineviloActivo = activo("reproductor_cinevilo_activo"),
                 autoplayActivo = activo("autoplay_activo"),
                 mantenimientoActivo = activo("mantenimiento_activo", false),
@@ -400,7 +398,6 @@ fun CineviloApp() {
                         enMiLista = miLista.any {
                             it.id == seleccionado!!.id
                         },
-                        autoplayActivo = configuracion.autoplayActivo,
                         onBack = {
                             seleccionado = null
                         },
@@ -548,13 +545,11 @@ fun CineviloApp() {
                         canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
                         enVivoCanalesActivo = configuracion.enVivoCanalesActivo,
-                        comentariosActivo = configuracion.comentariosActivo,
                         homeActivo = configuracion.homeActivo,
                         buscarActivo = configuracion.buscarActivo,
                         miListaActivo = configuracion.miListaActivo,
                         perfilActivo = configuracion.perfilActivo,
                         enVivoActivo = configuracion.enVivoActivo,
-                        autoplayActivo = configuracion.autoplayActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -632,13 +627,11 @@ fun EnVivoScreen(
     canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
     enVivoCanalesActivo: Boolean = true,
-    comentariosActivo: Boolean = true,
     homeActivo: Boolean = true,
     buscarActivo: Boolean = true,
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
     enVivoActivo: Boolean = true,
-    autoplayActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -682,9 +675,7 @@ fun EnVivoScreen(
 
             canalSeleccionado != null -> {
                 CineviloPlayer(
-                    videoUrl = canalSeleccionado.url,
-                    modoEnVivo = canalSeleccionado.modo.equals("rtmp", ignoreCase = true),
-                    autoplay = autoplayActivo
+                    videoUrl = canalSeleccionado.url
                 )
 
                 Column(
@@ -696,7 +687,7 @@ fun EnVivoScreen(
 
                     Text(
                         text =
-                            if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
+                            if (canalSeleccionado.modo.equals("rtmp", true)) {
                                 "CINEVILO EN VIVO"
                             } else {
                                 canalSeleccionado.titulo
@@ -859,7 +850,7 @@ fun EnVivoScreen(
                             }
                         }
 
-                        if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
+                        if (canalSeleccionado.modo.equals("rtmp", true)) {
 
                             Spacer(
                                 modifier = Modifier.height(22.dp)
@@ -2406,7 +2397,6 @@ fun CineviloPerfil(
 fun CineviloDetalle(
     contenido: Contenido,
     enMiLista: Boolean,
-    autoplayActivo: Boolean = true,
     onBack: () -> Unit,
     onMiLista: () -> Unit
 ) {
@@ -2436,8 +2426,7 @@ fun CineviloDetalle(
         if (contenido.videoUrl.isNotBlank()) {
 
             CineviloPlayer(
-                videoUrl = contenido.videoUrl,
-                autoplay = autoplayActivo
+                videoUrl = contenido.videoUrl
             )
 
             Spacer(

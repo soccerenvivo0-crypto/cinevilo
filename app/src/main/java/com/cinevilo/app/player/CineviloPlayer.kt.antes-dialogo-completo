@@ -1,0 +1,214 @@
+package com.cinevilo.app.player
+
+import android.net.Uri
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+
+@Composable
+fun CineviloPlayer(
+    videoUrl: String,
+    modifier: Modifier = Modifier,
+    modoEnVivo: Boolean = false
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val activity = context as? Activity
+    var pantallaCompleta by remember { mutableStateOf(false) }
+    val orientacionAnterior = remember { activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (pantallaCompleta) {
+                activity?.requestedOrientation = orientacionAnterior
+                pantallaCompleta = false
+            }
+        }
+    }
+
+    val player = remember(videoUrl) {
+        ExoPlayer.Builder(context).build().apply {
+            val mediaItem = MediaItem.Builder()
+                .setUri(Uri.parse(videoUrl))
+                .apply {
+                    if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
+                        setMimeType(MimeTypes.APPLICATION_M3U8)
+                    }
+                }
+                .build()
+
+            setMediaItem(mediaItem)
+            prepare()
+            playWhenReady = false
+        }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.release()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .background(Color.Black)
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxWidth(),
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    this.player = player
+                    useController = !modoEnVivo
+                    controllerShowTimeoutMs = 3000
+                    controllerAutoShow = !modoEnVivo
+                }
+            },
+            update = { view ->
+                view.player = player
+            }
+        )
+
+        if (modoEnVivo) {
+            Row(
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopStart)
+                    .padding(12.dp)
+                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "CINEVIL",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+                androidx.compose.foundation.Canvas(
+                    modifier = Modifier.size(14.dp)
+                ) {
+                    val triangle = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(size.width * 0.15f, size.height * 0.08f)
+                        lineTo(size.width * 0.95f, size.height * 0.5f)
+                        lineTo(size.width * 0.15f, size.height * 0.92f)
+                        close()
+                    }
+                    drawPath(triangle, Color.White)
+                }
+                Text(
+                    text = " ",
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        player.volume = if (player.volume > 0f) 0f else 1f
+                    },
+                    modifier = Modifier.background(
+                        Color.Black.copy(alpha = 0.55f),
+                        RoundedCornerShape(50)
+                    )
+                ) {
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        val speaker = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(size.width * 0.12f, size.height * 0.38f)
+                            lineTo(size.width * 0.32f, size.height * 0.38f)
+                            lineTo(size.width * 0.58f, size.height * 0.16f)
+                            lineTo(size.width * 0.58f, size.height * 0.84f)
+                            lineTo(size.width * 0.32f, size.height * 0.62f)
+                            lineTo(size.width * 0.12f, size.height * 0.62f)
+                            close()
+                        }
+                        drawPath(speaker, Color.White)
+                        drawLine(
+                            Color.White,
+                            androidx.compose.ui.geometry.Offset(size.width * 0.70f, size.height * 0.35f),
+                            androidx.compose.ui.geometry.Offset(size.width * 0.88f, size.height * 0.65f),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                        drawLine(
+                            Color.White,
+                            androidx.compose.ui.geometry.Offset(size.width * 0.88f, size.height * 0.35f),
+                            androidx.compose.ui.geometry.Offset(size.width * 0.70f, size.height * 0.65f),
+                            strokeWidth = 2.dp.toPx()
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = {
+                        pantallaCompleta = !pantallaCompleta
+                        activity?.requestedOrientation =
+                            if (pantallaCompleta) ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                            else orientacionAnterior
+                    },
+                    modifier = Modifier.background(
+                        Color.Black.copy(alpha = 0.55f),
+                        RoundedCornerShape(50)
+                    )
+                ) {
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        val stroke = 2.dp.toPx()
+                        val length = size.width * 0.30f
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(2.dp.toPx(), length), androidx.compose.ui.geometry.Offset(2.dp.toPx(), 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(2.dp.toPx(), 2.dp.toPx()), androidx.compose.ui.geometry.Offset(length, 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width - length, 2.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), 2.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), length), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(2.dp.toPx(), size.height - length), androidx.compose.ui.geometry.Offset(2.dp.toPx(), size.height - 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(2.dp.toPx(), size.height - 2.dp.toPx()), androidx.compose.ui.geometry.Offset(length, size.height - 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width - length, size.height - 2.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), size.height - 2.dp.toPx()), stroke)
+                        drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), size.height - length), androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), size.height - 2.dp.toPx()), stroke)
+                    }
+                }
+            }
+        }
+    }
+}

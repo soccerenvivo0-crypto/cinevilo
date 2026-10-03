@@ -4,7 +4,6 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,7 +39,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,10 +58,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 
 private val CineviloBlack = Color(0xFF08090D)
 private val CineviloDark = Color(0xFF101218)
@@ -90,7 +84,6 @@ data class ConfiguracionCinevilo(
     val originalsActivo: Boolean = true,
     val enVivoActivo: Boolean = true,
     val enVivoCanalesActivo: Boolean = true,
-    val comentariosActivo: Boolean = true,
     val reproductorCineviloActivo: Boolean = true,
     val autoplayActivo: Boolean = true,
     val mantenimientoActivo: Boolean = false,
@@ -140,7 +133,6 @@ suspend fun cargarConfiguracionDesdeApi(): ConfiguracionCinevilo =
                 originalsActivo = activo("originals_activo"),
                 enVivoActivo = activo("en_vivo_activo"),
                 enVivoCanalesActivo = activo("en_vivo_canales_activo"),
-                comentariosActivo = activo("comentarios_activo"),
                 reproductorCineviloActivo = activo("reproductor_cinevilo_activo"),
                 autoplayActivo = activo("autoplay_activo"),
                 mantenimientoActivo = activo("mantenimiento_activo", false),
@@ -294,43 +286,8 @@ fun CineviloApp() {
         mutableStateOf<Contenido?>(null)
     }
 
-    val contextoMiLista = LocalContext.current
-
-    val preferenciasMiLista = remember {
-        contextoMiLista.getSharedPreferences(
-            "cinevilo_mi_lista",
-            android.content.Context.MODE_PRIVATE
-        )
-    }
-
     var miLista by remember {
-        mutableStateOf<List<Contenido>>(
-            try {
-                val datos = org.json.JSONArray(
-                    preferenciasMiLista.getString("ids", "[]") ?: "[]"
-                )
-
-                val idsGuardados = List(datos.length()) { indice ->
-                    datos.getString(indice)
-                }
-
-                contenidos.filter { it.id in idsGuardados }
-            } catch (e: Exception) {
-                emptyList()
-            }
-        )
-    }
-
-    fun guardarMiLista(lista: List<Contenido>) {
-        val datos = org.json.JSONArray()
-
-        lista.forEach { item ->
-            datos.put(item.id)
-        }
-
-        preferenciasMiLista.edit()
-            .putString("ids", datos.toString())
-            .apply()
+        mutableStateOf<List<Contenido>>(emptyList())
     }
 
     var canalesEnVivo by remember {
@@ -349,23 +306,6 @@ fun CineviloApp() {
 
         try {
             contenidos = cargarContenidoDesdeApi()
-
-            try {
-                val datos = org.json.JSONArray(
-                    preferenciasMiLista.getString("ids", "[]") ?: "[]"
-                )
-
-                val idsGuardados = List(datos.length()) { indice ->
-                    datos.getString(indice)
-                }
-
-                miLista = contenidos.filter {
-                    it.id in idsGuardados
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
             progresoCarga = 0.5f
         } catch (e: Exception) {
             e.printStackTrace()
@@ -400,7 +340,6 @@ fun CineviloApp() {
                         enMiLista = miLista.any {
                             it.id == seleccionado!!.id
                         },
-                        autoplayActivo = configuracion.autoplayActivo,
                         onBack = {
                             seleccionado = null
                         },
@@ -416,8 +355,6 @@ fun CineviloApp() {
                                 } else {
                                     miLista + item
                                 }
-
-                            guardarMiLista(miLista)
                         }
                     )
                 }
@@ -548,13 +485,11 @@ fun CineviloApp() {
                         canalSeleccionado = canalSeleccionado,
                         cargando = cargandoEnVivo,
                         enVivoCanalesActivo = configuracion.enVivoCanalesActivo,
-                        comentariosActivo = configuracion.comentariosActivo,
                         homeActivo = configuracion.homeActivo,
                         buscarActivo = configuracion.buscarActivo,
                         miListaActivo = configuracion.miListaActivo,
                         perfilActivo = configuracion.perfilActivo,
                         enVivoActivo = configuracion.enVivoActivo,
-                        autoplayActivo = configuracion.autoplayActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -573,10 +508,6 @@ fun CineviloApp() {
                         },
                         onNavigate = {
                             pantalla = it
-                        },
-                        onEliminar = { item ->
-                            miLista = miLista.filter { it.id != item.id }
-                            guardarMiLista(miLista)
                         },
                         homeActivo = configuracion.homeActivo,
                         buscarActivo = configuracion.buscarActivo,
@@ -632,13 +563,11 @@ fun EnVivoScreen(
     canalSeleccionado: EnVivoItem?,
     cargando: Boolean,
     enVivoCanalesActivo: Boolean = true,
-    comentariosActivo: Boolean = true,
     homeActivo: Boolean = true,
     buscarActivo: Boolean = true,
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
     enVivoActivo: Boolean = true,
-    autoplayActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -658,7 +587,7 @@ fun EnVivoScreen(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(
                 start = 20.dp,
-                top = 30.dp,
+                top = 24.dp,
                 end = 20.dp,
                 bottom = 16.dp
             )
@@ -682,9 +611,7 @@ fun EnVivoScreen(
 
             canalSeleccionado != null -> {
                 CineviloPlayer(
-                    videoUrl = canalSeleccionado.url,
-                    modoEnVivo = canalSeleccionado.modo.equals("rtmp", ignoreCase = true),
-                    autoplay = autoplayActivo
+                    videoUrl = canalSeleccionado.url
                 )
 
                 Column(
@@ -696,7 +623,7 @@ fun EnVivoScreen(
 
                     Text(
                         text =
-                            if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
+                            if (canalSeleccionado.modo.equals("rtmp", true)) {
                                 "CINEVILO EN VIVO"
                             } else {
                                 canalSeleccionado.titulo
@@ -723,230 +650,41 @@ fun EnVivoScreen(
                             modifier = Modifier.height(10.dp)
                         )
 
-                        val canalPrincipal =
-                            canales.firstOrNull {
-                                it.modo.equals("rtmp", true)
-                            }
-
                         val canalesAdicionales =
                             canales.filter {
                                 !it.modo.equals("rtmp", true)
                             }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
+                        canalesAdicionales.forEach { canal ->
 
-                            canalPrincipal?.let { principal ->
+                            val seleccionado =
+                                canal.id == canalSeleccionado.id
 
-                                val principalSeleccionado =
-                                    canalSeleccionado.id == principal.id
-
-                                Box(
-                                    modifier = Modifier
-                                        .width(175.dp)
-                                        .height(92.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(CineviloDark)
-                                        .border(
-                                            width = if (principalSeleccionado) 2.dp else 1.dp,
-                                            color = if (principalSeleccionado) {
-                                                Color.Red
-                                            } else {
-                                                Color(0xFF16A34A)
-                                            },
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                        .clickable {
-                                            onSeleccionarCanal(principal)
-                                        }
-                                        .padding(12.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            text = "CINEVILO EN VIVO",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
-                                        )
-
-                                        Spacer(
-                                            modifier = Modifier.height(6.dp)
-                                        )
-
-                                        Text(
-                                            text = if (principalSeleccionado) {
-                                                "● EN VIVO"
-                                            } else {
-                                                "PRINCIPAL"
-                                            },
-                                            color = if (principalSeleccionado) {
-                                                Color.Red
-                                            } else {
-                                                Color(0xFF16A34A)
-                                            },
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-
-                            canalesAdicionales.forEach { canal ->
-
-                                val seleccionado =
-                                    canal.id == canalSeleccionado.id
-
-                                Box(
-                                    modifier = Modifier
-                                        .width(165.dp)
-                                        .height(88.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(CineviloDark)
-                                        .border(
-                                            width = if (seleccionado) 2.dp else 1.dp,
-                                            color = if (seleccionado) {
-                                                Color.Red
-                                            } else {
-                                                Color.White.copy(alpha = 0.10f)
-                                            },
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                        .clickable {
-                                            onSeleccionarCanal(canal)
-                                        }
-                                        .padding(12.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            text = canal.titulo,
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center
-                                        )
-
-                                        if (seleccionado) {
-                                            Spacer(
-                                                modifier = Modifier.height(6.dp)
-                                            )
-
-                                            Text(
-                                                text = "● EN VIVO",
-                                                color = Color.Red,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (comentariosActivo && canalSeleccionado.modo.equals("rtmp", true)) {
-
-                            Spacer(
-                                modifier = Modifier.height(22.dp)
-                            )
-
-                            Box(
+                            Button(
+                                onClick = {
+                                    onSeleccionarCanal(canal)
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(CineviloDark)
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color.White.copy(alpha = 0.08f),
-                                        shape = RoundedCornerShape(16.dp)
-                                    )
-                                    .padding(16.dp)
+                                    .padding(bottom = 10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor =
+                                        if (seleccionado) {
+                                            CineviloBlue
+                                        } else {
+                                            CineviloDark
+                                        },
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Column {
-
-                                    Text(
-                                        text = "💬  COMENTARIOS",
-                                        color = Color.White,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    Spacer(
-                                        modifier = Modifier.height(16.dp)
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "Todavía no hay comentarios.",
-                                            color = CineviloGray,
-                                            fontSize = 13.sp,
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-
-                                    Spacer(
-                                        modifier = Modifier.height(16.dp)
-                                    )
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(
-                                                CineviloBlack.copy(alpha = 0.7f)
-                                            )
-                                            .border(
-                                                width = 1.dp,
-                                                color = Color.White.copy(alpha = 0.08f),
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(
-                                                start = 14.dp,
-                                                end = 14.dp
-                                            ),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Escribe un comentario...",
-                                                color = CineviloGray,
-                                                fontSize = 13.sp,
-                                                modifier = Modifier.weight(1f)
-                                            )
-
-                                            Text(
-                                                text = "➤",
-                                                color = CineviloGray,
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
+                                Text(
+                                    text = canal.titulo,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -1850,8 +1588,7 @@ fun CineviloMiLista(
     buscarActivo: Boolean = true,
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
-    enVivoActivo: Boolean = true,
-    onEliminar: (Contenido) -> Unit
+    enVivoActivo: Boolean = true
 ) {
 
     Column(
@@ -1862,248 +1599,71 @@ fun CineviloMiLista(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 30.dp,
-                    bottom = 20.dp
-                )
+                .padding(20.dp)
         ) {
 
             Text(
-                text = "Mi Lista",
+                text = "Mi lista",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(
-                modifier = Modifier.height(5.dp)
-            )
-
-            Text(
-                text = if (contenidos.isEmpty()) {
-                    "Tu biblioteca personal"
-                } else {
-                    "${contenidos.size} contenido" +
-                        if (contenidos.size == 1) "" else "s" +
-                        " guardado" +
-                        if (contenidos.size == 1) "" else "s"
-                },
-                color = CineviloGray,
-                fontSize = 14.sp
-            )
-
-            Spacer(
-                modifier = Modifier.height(22.dp)
+                modifier = Modifier.height(20.dp)
             )
 
             if (contenidos.isEmpty()) {
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            top = 80.dp,
-                            bottom = 40.dp
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    Text(
-                        text = "Mi Lista está vacía",
-                        color = Color.White,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-
-                    Text(
-                        text = "Guarda películas y series para verlas después.",
-                        color = CineviloGray,
-                        fontSize = 14.sp
-                    )
-                }
+                Text(
+                    text = "Todavía no has agregado contenido a tu lista.",
+                    color = CineviloGray
+                )
 
             } else {
 
-                val filas = contenidos.chunked(2)
-
-                filas.forEach { fila ->
+                contenidos.forEach { item ->
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(14.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSeleccionar(item)
+                            }
+                            .padding(vertical = 8.dp)
                     ) {
 
-                        fila.forEach { item ->
-
-                            var mostrarPapelera by remember(item.id) {
-                                mutableStateOf(false)
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                            ) {
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(0.68f)
-                                        .clip(
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                        .pointerInput(item.id, mostrarPapelera) {
-                                            detectTapGestures(
-                                                onTap = {
-                                                    if (mostrarPapelera) {
-                                                        mostrarPapelera = false
-                                                    } else {
-                                                        onSeleccionar(item)
-                                                    }
-                                                },
-                                                onLongPress = {
-                                                    mostrarPapelera = true
-                                                }
-                                            )
-                                        }
-                                ) {
-
-                                    RemoteImage(
-                                        url = item.portadaUrl,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                    )
-
-                                    if (mostrarPapelera) {
-
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(
-                                                    Color.Black.copy(
-                                                        alpha = 0.45f
-                                                    )
-                                                ),
-                                            contentAlignment =
-                                                Alignment.Center
-                                        ) {
-
-                                            Row(
-                                                horizontalArrangement =
-                                                    Arrangement.spacedBy(14.dp),
-                                                verticalAlignment =
-                                                    Alignment.CenterVertically
-                                            ) {
-
-                                                IconButton(
-                                                    onClick = {
-                                                        mostrarPapelera = false
-                                                        onEliminar(item)
-                                                    },
-                                                    modifier = Modifier
-                                                        .size(54.dp)
-                                                        .background(
-                                                            Color.Red.copy(
-                                                                alpha = 0.72f
-                                                            ),
-                                                            RoundedCornerShape(
-                                                                27.dp
-                                                            )
-                                                        )
-                                                ) {
-
-                                                    Icon(
-                                                        imageVector =
-                                                            Icons.Default.Delete,
-                                                        contentDescription =
-                                                            "Quitar de Mi Lista",
-                                                        tint = Color.White,
-                                                        modifier =
-                                                            Modifier.size(28.dp)
-                                                    )
-                                                }
-
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(54.dp)
-                                                        .background(
-                                                            Color(0xFF16A34A).copy(
-                                                                alpha = 0.72f
-                                                            ),
-                                                            RoundedCornerShape(
-                                                                27.dp
-                                                            )
-                                                        )
-                                                        .clickable {
-                                                            mostrarPapelera = false
-                                                        },
-                                                    contentAlignment =
-                                                        Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = "↩",
-                                                        color = Color.White,
-                                                        fontSize = 28.sp
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Spacer(
-                                    modifier = Modifier.height(8.dp)
+                        RemoteImage(
+                            url = item.portadaUrl,
+                            modifier = Modifier
+                                .size(90.dp, 125.dp)
+                                .clip(
+                                    RoundedCornerShape(8.dp)
                                 )
+                        )
 
-                                Text(
-                                    text = item.titulo,
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow =
-                                        TextOverflow.Ellipsis
-                                )
+                        Spacer(
+                            modifier = Modifier.width(14.dp)
+                        )
 
-                                val detalles = listOfNotNull(
-                                    item.anio?.toString(),
-                                    item.genero.firstOrNull()
-                                ).joinToString(" • ")
+                        Column {
 
-                                if (detalles.isNotBlank()) {
+                            Text(
+                                text = item.titulo,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
 
-                                    Spacer(
-                                        modifier = Modifier.height(3.dp)
-                                    )
-
-                                    Text(
-                                        text = detalles,
-                                        color = CineviloGray,
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        overflow =
-                                            TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-
-                        if (fila.size == 1) {
-                            Spacer(
-                                modifier = Modifier.weight(1f)
+                            Text(
+                                text = item.descripcion,
+                                color = CineviloGray,
+                                fontSize = 13.sp,
+                                maxLines = 4,
+                                overflow =
+                                    TextOverflow.Ellipsis
                             )
                         }
                     }
-
-                    Spacer(
-                        modifier = Modifier.height(20.dp)
-                    )
                 }
             }
         }
@@ -2138,12 +1698,7 @@ fun CineviloPerfil(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(
-                    start = 20.dp,
-                    end = 20.dp,
-                    top = 30.dp,
-                    bottom = 24.dp
-                )
+                .padding(20.dp)
         ) {
 
             Text(
@@ -2154,239 +1709,45 @@ fun CineviloPerfil(
             )
 
             Spacer(
-                modifier = Modifier.height(24.dp)
+                modifier = Modifier.height(28.dp)
             )
 
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(CineviloDark)
-                    .padding(20.dp)
+                    .size(90.dp)
+                    .clip(
+                        RoundedCornerShape(45.dp)
+                    )
+                    .background(CineviloBlue),
+                contentAlignment = Alignment.Center
             ) {
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Box(
-                        modifier = Modifier
-                            .size(76.dp)
-                            .clip(RoundedCornerShape(38.dp))
-                            .background(CineviloBlue),
-                        contentAlignment = Alignment.Center
-                    ) {
-
-                        Text(
-                            text = "C",
-                            color = Color.White,
-                            fontSize = 34.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(
-                        modifier = Modifier.width(16.dp)
-                    )
-
-                    Column {
-
-                        Text(
-                            text = "Usuario CINEVILO",
-                            color = Color.White,
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(5.dp)
-                        )
-
-                        Text(
-                            text = "Cuenta gratuita",
-                            color = CineviloGray,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
-            Text(
-                text = "Mi cuenta",
-                color = CineviloGray,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CineviloDark)
-            ) {
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onNavigate("lista")
-                        }
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text = "▣",
-                        color = CineviloBlue,
-                        fontSize = 22.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.width(15.dp)
-                    )
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-
-                        Text(
-                            text = "Mi Lista",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = "Tus películas y series guardadas",
-                            color = CineviloGray,
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    Text(
-                        text = "›",
-                        color = CineviloGray,
-                        fontSize = 25.sp
-                    )
-                }
-
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(CineviloBlack)
+                Text(
+                    text = "C",
+                    color = Color.White,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Bold
                 )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { }
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Text(
-                        text = "⚙",
-                        color = CineviloBlue,
-                        fontSize = 22.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.width(15.dp)
-                    )
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-
-                        Text(
-                            text = "Configuración",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Text(
-                            text = "Preferencias de la aplicación",
-                            color = CineviloGray,
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    Text(
-                        text = "›",
-                        color = CineviloGray,
-                        fontSize = 25.sp
-                    )
-                }
             }
 
             Spacer(
-                modifier = Modifier.height(24.dp)
+                modifier = Modifier.height(18.dp)
             )
 
             Text(
-                text = "Cinevilo",
-                color = CineviloGray,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
+                text = "Usuario CINEVILO",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(
-                modifier = Modifier.height(10.dp)
+                modifier = Modifier.height(8.dp)
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CineviloDark)
-                    .padding(18.dp)
-            ) {
-
-                Column {
-
-                    Text(
-                        text = "Sobre Cinevilo",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
-                    Text(
-                        text = "Tu espacio para disfrutar de películas, series y transmisiones.",
-                        color = CineviloGray,
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
-
-                    Text(
-                        text = "Versión de prueba",
-                        color = CineviloBlue,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(20.dp)
+            Text(
+                text = "Tu perfil de CINEVILO",
+                color = CineviloGray
             )
         }
 
@@ -2406,7 +1767,6 @@ fun CineviloPerfil(
 fun CineviloDetalle(
     contenido: Contenido,
     enMiLista: Boolean,
-    autoplayActivo: Boolean = true,
     onBack: () -> Unit,
     onMiLista: () -> Unit
 ) {
@@ -2436,8 +1796,7 @@ fun CineviloDetalle(
         if (contenido.videoUrl.isNotBlank()) {
 
             CineviloPlayer(
-                videoUrl = contenido.videoUrl,
-                autoplay = autoplayActivo
+                videoUrl = contenido.videoUrl
             )
 
             Spacer(

@@ -400,7 +400,6 @@ fun CineviloApp() {
                         enMiLista = miLista.any {
                             it.id == seleccionado!!.id
                         },
-                        autoplayActivo = configuracion.autoplayActivo,
                         onBack = {
                             seleccionado = null
                         },
@@ -554,7 +553,6 @@ fun CineviloApp() {
                         miListaActivo = configuracion.miListaActivo,
                         perfilActivo = configuracion.perfilActivo,
                         enVivoActivo = configuracion.enVivoActivo,
-                        autoplayActivo = configuracion.autoplayActivo,
                         onSeleccionarCanal = {
                             canalSeleccionado = it
                         },
@@ -638,7 +636,6 @@ fun EnVivoScreen(
     miListaActivo: Boolean = true,
     perfilActivo: Boolean = true,
     enVivoActivo: Boolean = true,
-    autoplayActivo: Boolean = true,
     onSeleccionarCanal: (EnVivoItem) -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -682,9 +679,7 @@ fun EnVivoScreen(
 
             canalSeleccionado != null -> {
                 CineviloPlayer(
-                    videoUrl = canalSeleccionado.url,
-                    modoEnVivo = canalSeleccionado.modo.equals("rtmp", ignoreCase = true),
-                    autoplay = autoplayActivo
+                    videoUrl = canalSeleccionado.url
                 )
 
                 Column(
@@ -2406,7 +2401,6 @@ fun CineviloPerfil(
 fun CineviloDetalle(
     contenido: Contenido,
     enMiLista: Boolean,
-    autoplayActivo: Boolean = true,
     onBack: () -> Unit,
     onMiLista: () -> Unit
 ) {
@@ -2436,8 +2430,7 @@ fun CineviloDetalle(
         if (contenido.videoUrl.isNotBlank()) {
 
             CineviloPlayer(
-                videoUrl = contenido.videoUrl,
-                autoplay = autoplayActivo
+                videoUrl = contenido.videoUrl
             )
 
             Spacer(
