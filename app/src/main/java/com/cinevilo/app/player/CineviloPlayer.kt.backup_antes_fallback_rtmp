@@ -1,6 +1,5 @@
 package com.cinevilo.app.player
 
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -49,7 +48,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
@@ -67,9 +65,6 @@ fun CineviloPlayer(
     var silenciado by remember { mutableStateOf(false) }
     var volumenAnterior by remember { mutableStateOf(1f) }
     var controlesVisibles by remember { mutableStateOf(true) }
-    var rtmpSinSenal by remember(modoEnVivo) {
-        mutableStateOf(false)
-    }
 
     val orientacionAnterior = remember {
         activity?.requestedOrientation
@@ -93,48 +88,6 @@ fun CineviloPlayer(
         }
     }
 
-    val videoEsperaUri = remember {
-        Uri.parse("android.resource://${context.packageName}/${com.cinevilo.app.R.raw.cinevilo_espera}")
-    }
-
-    fun reproducirVideoEspera() {
-        if (!modoEnVivo) return
-        if (rtmpSinSenal && player.currentMediaItem?.localConfiguration?.uri == videoEsperaUri) {
-            return
-        }
-
-        rtmpSinSenal = true
-
-        player.setMediaItem(
-            MediaItem.Builder()
-                .setUri(videoEsperaUri)
-                .build()
-        )
-        player.repeatMode = Player.REPEAT_MODE_ONE
-        player.prepare()
-        player.playWhenReady = true
-    }
-
-    fun volverAlEnVivo() {
-        if (!modoEnVivo) return
-
-        rtmpSinSenal = false
-
-        val item = MediaItem.Builder()
-            .setUri(Uri.parse(videoUrl))
-            .apply {
-                if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
-                    setMimeType(MimeTypes.APPLICATION_M3U8)
-                }
-            }
-            .build()
-
-        player.repeatMode = Player.REPEAT_MODE_OFF
-        player.setMediaItem(item)
-        player.prepare()
-        player.playWhenReady = true
-    }
-
     fun alternarSilencio() {
         if (silenciado || player.volume <= 0f) {
             player.volume = volumenAnterior.coerceIn(0.05f, 1f)
@@ -151,99 +104,6 @@ fun CineviloPlayer(
         player.volume = nuevoVolumen
         silenciado = nuevoVolumen <= 0f
         if (nuevoVolumen > 0f) volumenAnterior = nuevoVolumen
-    }
-
-    LaunchedEffect(modoEnVivo, rtmpSinSenal) {
-        if (modoEnVivo && rtmpSinSenal) {
-            while (rtmpSinSenal) {
-                val comprobador = ExoPlayer.Builder(context).build()
-
-                try {
-                    val item = MediaItem.Builder()
-                        .setUri(Uri.parse(videoUrl))
-                        .apply {
-                            if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
-                                setMimeType(MimeTypes.APPLICATION_M3U8)
-                            }
-                        }
-                        .build()
-
-                    val resultado = kotlinx.coroutines.CompletableDeferred<Boolean>()
-
-                    val listener = object : Player.Listener {
-                        override fun onPlaybackStateChanged(playbackState: Int) {
-                            if (playbackState == Player.STATE_READY) {
-                                resultado.complete(true)
-                            }
-                        }
-
-                        override fun onPlayerError(
-                            error: androidx.media3.common.PlaybackException
-                        ) {
-                            resultado.complete(false)
-                        }
-                    }
-
-                    comprobador.addListener(listener)
-                    comprobador.setMediaItem(item)
-                    comprobador.prepare()
-                    comprobador.playWhenReady = true
-
-                    val haySenal = kotlinx.coroutines.withTimeoutOrNull(3000) {
-                        resultado.await()
-                    } ?: false
-
-                    comprobador.removeListener(listener)
-
-                    if (haySenal && rtmpSinSenal) {
-                        volverAlEnVivo()
-                        break
-                    }
-
-                } finally {
-                    comprobador.release()
-                }
-
-                kotlinx.coroutines.delay(3000)
-            }
-        }
-    }
-
-    DisposableEffect(player, modoEnVivo) {
-        if (modoEnVivo) {
-            val listener = object : Player.Listener {
-
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_READY) {
-                        val uriActual =
-                            player.currentMediaItem?.localConfiguration?.uri
-
-                        if (uriActual != videoEsperaUri) {
-                            rtmpSinSenal = false
-                        }
-                    }
-                }
-
-                override fun onPlayerError(
-                    error: androidx.media3.common.PlaybackException
-                ) {
-                    val uriActual =
-                        player.currentMediaItem?.localConfiguration?.uri
-
-                    if (uriActual != videoEsperaUri) {
-                        reproducirVideoEspera()
-                    }
-                }
-            }
-
-            player.addListener(listener)
-
-            onDispose {
-                player.removeListener(listener)
-            }
-        } else {
-            onDispose { }
-        }
     }
 
     DisposableEffect(player) {
@@ -275,7 +135,6 @@ fun CineviloPlayer(
                 },
                 update = { it.player = player }
             )
-
         }
 
         if (modoEnVivo && pantallaCompleta) {

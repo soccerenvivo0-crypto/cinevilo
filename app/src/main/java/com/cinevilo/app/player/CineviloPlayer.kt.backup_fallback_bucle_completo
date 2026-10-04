@@ -156,55 +156,27 @@ fun CineviloPlayer(
     LaunchedEffect(modoEnVivo, rtmpSinSenal) {
         if (modoEnVivo && rtmpSinSenal) {
             while (rtmpSinSenal) {
-                val comprobador = ExoPlayer.Builder(context).build()
+                kotlinx.coroutines.delay(30000)
 
-                try {
-                    val item = MediaItem.Builder()
-                        .setUri(Uri.parse(videoUrl))
-                        .apply {
-                            if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
-                                setMimeType(MimeTypes.APPLICATION_M3U8)
-                            }
-                        }
-                        .build()
-
-                    val resultado = kotlinx.coroutines.CompletableDeferred<Boolean>()
-
-                    val listener = object : Player.Listener {
-                        override fun onPlaybackStateChanged(playbackState: Int) {
-                            if (playbackState == Player.STATE_READY) {
-                                resultado.complete(true)
-                            }
-                        }
-
-                        override fun onPlayerError(
-                            error: androidx.media3.common.PlaybackException
-                        ) {
-                            resultado.complete(false)
-                        }
-                    }
-
-                    comprobador.addListener(listener)
-                    comprobador.setMediaItem(item)
-                    comprobador.prepare()
-                    comprobador.playWhenReady = true
-
-                    val haySenal = kotlinx.coroutines.withTimeoutOrNull(3000) {
-                        resultado.await()
-                    } ?: false
-
-                    comprobador.removeListener(listener)
-
-                    if (haySenal && rtmpSinSenal) {
-                        volverAlEnVivo()
-                        break
-                    }
-
-                } finally {
-                    comprobador.release()
+                if (!rtmpSinSenal) {
+                    break
                 }
 
-                kotlinx.coroutines.delay(3000)
+                val item = MediaItem.Builder()
+                    .setUri(Uri.parse(videoUrl))
+                    .apply {
+                        if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
+                            setMimeType(MimeTypes.APPLICATION_M3U8)
+                        }
+                    }
+                    .build()
+
+                player.repeatMode = Player.REPEAT_MODE_OFF
+                player.setMediaItem(item)
+                player.prepare()
+                player.playWhenReady = true
+
+                kotlinx.coroutines.delay(5000)
             }
         }
     }

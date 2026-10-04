@@ -1,9 +1,5 @@
 package com.cinevilo.app.player
 
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
@@ -41,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -49,7 +44,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 
@@ -67,9 +61,6 @@ fun CineviloPlayer(
     var silenciado by remember { mutableStateOf(false) }
     var volumenAnterior by remember { mutableStateOf(1f) }
     var controlesVisibles by remember { mutableStateOf(true) }
-    var rtmpSinSenal by remember(modoEnVivo) {
-        mutableStateOf(false)
-    }
 
     val orientacionAnterior = remember {
         activity?.requestedOrientation
@@ -93,48 +84,6 @@ fun CineviloPlayer(
         }
     }
 
-    val videoEsperaUri = remember {
-        Uri.parse("android.resource://${context.packageName}/${com.cinevilo.app.R.raw.cinevilo_espera}")
-    }
-
-    fun reproducirVideoEspera() {
-        if (!modoEnVivo) return
-        if (rtmpSinSenal && player.currentMediaItem?.localConfiguration?.uri == videoEsperaUri) {
-            return
-        }
-
-        rtmpSinSenal = true
-
-        player.setMediaItem(
-            MediaItem.Builder()
-                .setUri(videoEsperaUri)
-                .build()
-        )
-        player.repeatMode = Player.REPEAT_MODE_ONE
-        player.prepare()
-        player.playWhenReady = true
-    }
-
-    fun volverAlEnVivo() {
-        if (!modoEnVivo) return
-
-        rtmpSinSenal = false
-
-        val item = MediaItem.Builder()
-            .setUri(Uri.parse(videoUrl))
-            .apply {
-                if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
-                    setMimeType(MimeTypes.APPLICATION_M3U8)
-                }
-            }
-            .build()
-
-        player.repeatMode = Player.REPEAT_MODE_OFF
-        player.setMediaItem(item)
-        player.prepare()
-        player.playWhenReady = true
-    }
-
     fun alternarSilencio() {
         if (silenciado || player.volume <= 0f) {
             player.volume = volumenAnterior.coerceIn(0.05f, 1f)
@@ -151,99 +100,6 @@ fun CineviloPlayer(
         player.volume = nuevoVolumen
         silenciado = nuevoVolumen <= 0f
         if (nuevoVolumen > 0f) volumenAnterior = nuevoVolumen
-    }
-
-    LaunchedEffect(modoEnVivo, rtmpSinSenal) {
-        if (modoEnVivo && rtmpSinSenal) {
-            while (rtmpSinSenal) {
-                val comprobador = ExoPlayer.Builder(context).build()
-
-                try {
-                    val item = MediaItem.Builder()
-                        .setUri(Uri.parse(videoUrl))
-                        .apply {
-                            if (videoUrl.substringBefore("?").lowercase().endsWith(".m3u8")) {
-                                setMimeType(MimeTypes.APPLICATION_M3U8)
-                            }
-                        }
-                        .build()
-
-                    val resultado = kotlinx.coroutines.CompletableDeferred<Boolean>()
-
-                    val listener = object : Player.Listener {
-                        override fun onPlaybackStateChanged(playbackState: Int) {
-                            if (playbackState == Player.STATE_READY) {
-                                resultado.complete(true)
-                            }
-                        }
-
-                        override fun onPlayerError(
-                            error: androidx.media3.common.PlaybackException
-                        ) {
-                            resultado.complete(false)
-                        }
-                    }
-
-                    comprobador.addListener(listener)
-                    comprobador.setMediaItem(item)
-                    comprobador.prepare()
-                    comprobador.playWhenReady = true
-
-                    val haySenal = kotlinx.coroutines.withTimeoutOrNull(3000) {
-                        resultado.await()
-                    } ?: false
-
-                    comprobador.removeListener(listener)
-
-                    if (haySenal && rtmpSinSenal) {
-                        volverAlEnVivo()
-                        break
-                    }
-
-                } finally {
-                    comprobador.release()
-                }
-
-                kotlinx.coroutines.delay(3000)
-            }
-        }
-    }
-
-    DisposableEffect(player, modoEnVivo) {
-        if (modoEnVivo) {
-            val listener = object : Player.Listener {
-
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_READY) {
-                        val uriActual =
-                            player.currentMediaItem?.localConfiguration?.uri
-
-                        if (uriActual != videoEsperaUri) {
-                            rtmpSinSenal = false
-                        }
-                    }
-                }
-
-                override fun onPlayerError(
-                    error: androidx.media3.common.PlaybackException
-                ) {
-                    val uriActual =
-                        player.currentMediaItem?.localConfiguration?.uri
-
-                    if (uriActual != videoEsperaUri) {
-                        reproducirVideoEspera()
-                    }
-                }
-            }
-
-            player.addListener(listener)
-
-            onDispose {
-                player.removeListener(listener)
-            }
-        } else {
-            onDispose { }
-        }
     }
 
     DisposableEffect(player) {
@@ -275,13 +131,13 @@ fun CineviloPlayer(
                 },
                 update = { it.player = player }
             )
-
         }
 
         if (modoEnVivo && pantallaCompleta) {
             Dialog(
                 onDismissRequest = {
-                    // El cierre del fullscreen se realiza únicamente mediante el botón de salida.
+                    pantallaCompleta = false
+                    activity?.requestedOrientation = orientacionAnterior
                 },
                 properties = DialogProperties(
                     usePlatformDefaultWidth = false,
@@ -305,18 +161,15 @@ fun CineviloPlayer(
                 ) {
                     val dialogView = LocalView.current
 
-                    DisposableEffect(dialogView) {
+                    SideEffect {
                         val window = (dialogView.parent as? DialogWindowProvider)?.window
+                            ?: activity?.window
+
                         window?.let {
                             WindowCompat.setDecorFitsSystemWindows(it, false)
-                            WindowCompat.getInsetsController(it, dialogView).apply {
-                                systemBarsBehavior =
-                                    androidx.core.view.WindowInsetsControllerCompat
-                                        .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                                hide(WindowInsetsCompat.Type.systemBars())
-                            }
+                            WindowCompat.getInsetsController(it, dialogView)
+                                .hide(WindowInsetsCompat.Type.systemBars())
                         }
-                        onDispose { }
                     }
 
                     AndroidView(
@@ -395,73 +248,57 @@ fun CineviloPlayer(
                     if (controlesVisibles) {
                         IconButton(
                             onClick = {
-                                val window = (dialogView.parent as? DialogWindowProvider)?.window
-                                
+                                activity?.window?.let { window ->
+                                    WindowCompat.getInsetsController(
+                                        window,
+                                        window.decorView
+                                    ).show(WindowInsetsCompat.Type.systemBars())
 
-                            window?.let {
-                                WindowCompat.getInsetsController(
-                                    it,
-                                    dialogView
-                                ).show(WindowInsetsCompat.Type.systemBars())
-
-                            }
+                                    WindowCompat.setDecorFitsSystemWindows(
+                                        window,
+                                        true
+                                    )
+                                }
 
                                 pantallaCompleta = false
                                 activity?.requestedOrientation = orientacionAnterior
                             },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(end = 40.dp, bottom = 4.dp)
-                                .size(60.dp)
-                                .zIndex(10f)
-                                .background(
-                                    Color.Black.copy(alpha = 0.78f),
-                                    RoundedCornerShape(50)
-                                )
+                            .padding(12.dp)
+                            .background(
+                                Color.Black.copy(alpha = 0.65f),
+                                RoundedCornerShape(50)
+                            )
                     ) {
                         Canvas(
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(24.dp)
                         ) {
-                            val stroke = size.width * 0.07f
+                            val stroke = 2.2f
 
                             drawLine(
                                 color = Color.White,
-                                start = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.18f, size.height * 0.38f
-                                ),
-                                end = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.18f, size.height * 0.18f
-                                ),
+                                start = androidx.compose.ui.geometry.Offset(4f, 9f),
+                                end = androidx.compose.ui.geometry.Offset(9f, 9f),
                                 strokeWidth = stroke
                             )
                             drawLine(
                                 color = Color.White,
-                                start = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.18f, size.height * 0.18f
-                                ),
-                                end = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.38f, size.height * 0.18f
-                                ),
+                                start = androidx.compose.ui.geometry.Offset(4f, 9f),
+                                end = androidx.compose.ui.geometry.Offset(4f, 4f),
+                                strokeWidth = stroke
+                            )
+
+                            drawLine(
+                                color = Color.White,
+                                start = androidx.compose.ui.geometry.Offset(20f, 15f),
+                                end = androidx.compose.ui.geometry.Offset(15f, 15f),
                                 strokeWidth = stroke
                             )
                             drawLine(
                                 color = Color.White,
-                                start = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.82f, size.height * 0.62f
-                                ),
-                                end = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.62f, size.height * 0.62f
-                                ),
-                                strokeWidth = stroke
-                            )
-                            drawLine(
-                                color = Color.White,
-                                start = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.82f, size.height * 0.62f
-                                ),
-                                end = androidx.compose.ui.geometry.Offset(
-                                    size.width * 0.82f, size.height * 0.82f
-                                ),
+                                start = androidx.compose.ui.geometry.Offset(20f, 15f),
+                                end = androidx.compose.ui.geometry.Offset(20f, 20f),
                                 strokeWidth = stroke
                             )
                         }
